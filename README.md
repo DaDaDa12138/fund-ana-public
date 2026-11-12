@@ -821,6 +821,17 @@ python3 scripts/run_isolated_tests.py -- tests/test_regression_guards.py
 
 Python 回归通过 [run_isolated_tests.py](scripts/run_isolated_tests.py) 在新建断网容器执行，不挂生产数据/配置。直接 pytest 会被收集守卫拒绝，复用镜像也要通过源码 SHA 验证。
 
+新克隆的公开源码需要先完成第15节的模板配置初始化；测试容器只使用模板生成的配置，不使用生产配置。公开仓库不分发真实基金数据的回归样本，依赖这些样本的完整回归应在获授权的私有验收环境执行。以下用例使用独立构造的测试输入，可在公开源码副本运行：
+
+```bash
+cp config/project.example.yaml config/project.yaml
+cp core/config/config.yaml.template core/config/config.yaml
+python3 scripts/run_isolated_tests.py -- \
+  tests/test_github_split_storage.py tests/test_github_schedule_delivery.py \
+  tests/test_github_cloud_state.py tests/test_github_reports.py \
+  tests/test_github_hosted_completion.py
+```
+
 [source-check.yml](.github/workflows/source-check.yml) 仅检查语法及无真实数据的前端回归，不证明真实 API 或正式发布验收。完整模板在 [regression-smoke.yml.example](.github/workflows/regression-smoke.yml.example)。部分测试依赖未分发样本，缺失应说明范围，不能伪造样本或上传生产响应。
 
 工作流代码变更应验证健康、Dashboard 及一次真实或适当受控工作流；调度变更还需看心跳、自然任务与日志。文档更新不代表已经执行这些生产验收。
