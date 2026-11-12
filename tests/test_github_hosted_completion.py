@@ -348,7 +348,7 @@ def superseded_fixture(tmp_path, *, cooldown=False):
         conn.execute('UPDATE fund_returns SET '+','.join(k+'=?' for k in row)+" WHERE fcode='000002'", list(row.values()))
     outcome = {'fcode': '000002', 'status': 'superseded_refresh_rejected', 'superseded_refresh_rejected': True}
     summary = result['period_return_collection']
-    summary.update(initialization_placeholder_fcodes=[], superseded_refresh_fcodes=['000002'],
+    summary.update(started_at='2026-01-02T00:00:00', max_nav_age_days=14, initialization_placeholder_fcodes=[], superseded_refresh_fcodes=['000002'],
                    outcomes=[] if cooldown else [outcome], cooldown_outcomes=[outcome] if cooldown else [],
                    target_count=0 if cooldown else 1, failed_count=0 if cooldown else 1, cooldown_count=1 if cooldown else 0)
     result['warning_reason'] = 'period_return_refresh_superseded'
@@ -428,7 +428,7 @@ def test_report_sync_rejects_invalid_superseded_proof(tmp_path, fault):
     elif fault=='status': item['status']='request_failed'
     elif fault=='projection': item['returns_and_nav']='unknown'
     elif fault=='hash': item['accepted_source_sha256']='not-a-sha'
-    elif fault=='date': item['nav_date']='2025-12-31'
+    elif fault=='date': item['nav_date']='2099-01-01'
     elif fault=='code': item['fcode']='000003'
     elif fault=='duplicate': proof['superseded_refresh_proofs']*=2
     elif fault=='reason': check['task_warning_reason']='period_return_unavailable_without_returns'
@@ -456,3 +456,34 @@ def test_superseded_initializer_and_missing_exclusions_are_verified_together(tmp
     status,proof=hosted_task_outcome(result,0,before,after,output,Path(db.db_path))
     assert status=='published_with_warnings' and proof['excluded_fcodes']==['000002','000003','000004']
     assert len(proof['superseded_refresh_proofs'])==len(proof['rejection_proofs'])==len(proof['missing_returns_proofs'])==1
+
+
+def test_excluded_fund_nav_can_precede_publication_within_original_collection_window(tmp_path):
+    output, bundle, check, db, result, before, after=superseded_fixture(tmp_path)
+    bundle['publication']['nav_date']='2026-01-02'
+    write_json(output/'bundle.json',bundle)
+    status,proof=hosted_task_outcome(result,0,before,after,output,Path(db.db_path))
+    item=proof['superseded_refresh_proofs'][0]
+    assert item['nav_date']=='2026-01-01' and item['eligibility_date']=='2026-01-02' and item['max_nav_age_days']==14
+    check.update(status=status,task_status='degraded',nonblocking_validation=proof,publication=bundle['publication'],
+                 task_warning_reason=result['warning_reason'],publication_sync_status='verified_current')
+    directory=tmp_path/'repo';directory.mkdir()
+    assert merge_export(directory,check,output)['status']==status
+
+
+@pytest.mark.parametrize('fund,publication,eligible,limit,expected',[
+    ('2026-01-01','2026-01-01','2026-01-01',14,True),
+    ('2026-01-01','2026-01-02','2026-01-15',14,True),
+    ('2026-01-01','2026-01-02','2026-01-16',14,False),
+    ('2026-01-02','2026-01-01','2026-01-02',14,False),
+    ('2026-01-01','2026-01-03','2026-01-02',14,False),
+    (None,'2026-01-02','2026-01-02',14,False),
+    ('2026-01-01','2026-01-02',None,14,False),
+    ('2026-01-01','2026-01-02','2026-01-02',None,False),
+    ('2026-01-01','2026-01-02','2026-01-02',True,False),
+    ('2026-01-01','2026-01-02','2026-01-02',0,False),
+    ('2026-01-01','2026-01-02','2026-01-02',-1,False),
+])
+def test_superseded_date_proof_preserves_fund_dates_and_exact_age_boundary(fund,publication,eligible,limit,expected):
+    from core.utils.period_return_snapshot import verified_superseded_date_proof
+    assert verified_superseded_date_proof({'nav_date':fund,'eligibility_date':eligible,'max_nav_age_days':limit},publication) is expected

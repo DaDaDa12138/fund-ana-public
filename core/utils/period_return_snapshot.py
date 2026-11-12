@@ -160,6 +160,18 @@ def verified_current_rank_snapshot(record: Mapping[str, Any], *, now: datetime |
         return False
 
 
+
+def verified_superseded_date_proof(proof: Mapping[str, Any], publication_nav_date: Any) -> bool:
+    """Bind an excluded fund's own NAV to the original collection age window."""
+    fund = snapshot_date(proof.get("nav_date"))
+    eligible = snapshot_date(proof.get("eligibility_date"))
+    published = snapshot_date(publication_nav_date)
+    limit = proof.get("max_nav_age_days")
+    return bool(fund is not None and eligible is not None and published is not None
+                and type(limit) is int and limit > 0
+                and fund <= published <= eligible and (eligible - fund).days <= limit)
+
+
 def initialization_placeholder(response: Any, *, estab_date: Any, nav_date: Any) -> bool:
     """Recognize the provider's reset-to-inception sentinel, not a real zero return.
 

@@ -10,7 +10,7 @@ import sqlite3
 from backend.github_reports import ReportExportError, task_outcome, verify_bundle
 from core.utils.period_return_snapshot import (
     RETURN_FIELDS, RETURN_PROVENANCE_FIELDS, RETURN_REJECTION_FIELDS,
-    period_collection_blocking_count, verified_initialization_quarantine, verified_current_rank_snapshot,
+    period_collection_blocking_count, verified_initialization_quarantine, verified_current_rank_snapshot, verified_superseded_date_proof,
 )
 
 
@@ -119,13 +119,16 @@ def hosted_task_outcome(result: dict, return_code: int, before: dict, after: dic
                     raise ReportExportError("quarantine_rejection_binding_mismatch")
                 proofs.append({"fcode": code, "rejection_sha256": row["period_return_rejection_sha256"]})
             elif code in superseded:
+                date_proof = {"nav_date": str(row.get("latest_nav_date") or "")[:10],
+                              "eligibility_date": str(summary.get("started_at") or "")[:10],
+                              "max_nav_age_days": summary.get("max_nav_age_days")}
                 if (row.get("period_return_last_status") != "superseded_refresh_rejected"
                         or any(row.get(field) is not None for field in RETURN_REJECTION_FIELDS)
-                        or str(row.get("latest_nav_date") or "")[:10] != bundle["publication"].get("nav_date")
+                        or not verified_superseded_date_proof(date_proof, bundle["publication"].get("nav_date"))
                         or not verified_current_rank_snapshot(row)):
                     raise ReportExportError("superseded_snapshot_exclusion_not_verified")
                 superseded_proofs.append({"fcode": code, "status": "superseded_refresh_rejected",
-                    "returns_and_nav": "reprojected_current_rank", "nav_date": str(row["latest_nav_date"])[:10],
+                    "returns_and_nav": "reprojected_current_rank", **date_proof,
                     "accepted_source_sha256": row["period_return_source_sha256"]})
             else:
                 if (not row or row.get("period_return_last_status") != "missing"

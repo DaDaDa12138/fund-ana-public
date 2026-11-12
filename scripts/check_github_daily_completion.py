@@ -14,6 +14,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from backend.shanghai_time import SHANGHAI, now_shanghai
 from backend.github_storage import source_repository, state_repository
+from core.utils.period_return_snapshot import verified_superseded_date_proof
 
 # GitHub cron is UTC; these are Shanghai 07:47 and 10:47 respectively.
 DAILY_SCHEDULES = frozenset({"47 23 * * *", "47 2 * * *", "17 0,1,4 * * *"})
@@ -116,7 +117,7 @@ def completed_daily(checks: list[dict], now: datetime) -> str | None:
                         or any(not isinstance(item, dict) or item.get("fcode") not in proof.get("excluded_fcodes", [])
                                or item.get("status") != "superseded_refresh_rejected"
                                or item.get("returns_and_nav") != "reprojected_current_rank"
-                               or item.get("nav_date") != (check.get("publication") or {}).get("nav_date")
+                               or not verified_superseded_date_proof(item, (check.get("publication") or {}).get("nav_date"))
                                or not re.fullmatch(r"[0-9a-f]{64}", str(item.get("accepted_source_sha256") or ""))
                                for item in superseded)):
                     continue

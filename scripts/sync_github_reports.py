@@ -19,6 +19,7 @@ sys.path.insert(0, str(ROOT))
 from backend.github_reports import ReportExportError, verify_bundle, write_json
 from backend.github_report_view import report_view, report_index
 from backend.shanghai_time import now_shanghai, display_shanghai
+from core.utils.period_return_snapshot import verified_superseded_date_proof
 
 
 BRANCH = "daily-reports"
@@ -93,7 +94,7 @@ def merge_export(repository: Path, check: dict, bundle_dir: Path | None) -> dict
             proof = check["nonblocking_validation"]
             csv_hash = next(item["sha256"] for item in bundle["files"] if item["path"] == "formal.csv")
             if (proof.get("formal_csv_sha256") != csv_hash or proof.get("publication_run_id") != publication["run_id"]
-                    or any(item["nav_date"] != publication.get("nav_date") for item in proof.get("superseded_refresh_proofs", []))):
+                    or any(not verified_superseded_date_proof(item, publication.get("nav_date")) for item in proof.get("superseded_refresh_proofs", []))):
                 raise ReportExportError("warning_bundle_proof_mismatch")
         day = datetime.fromisoformat(publication["committed_at"]).date().isoformat()
         relative = Path("reports") / day / publication["run_id"] / publication["revision"]

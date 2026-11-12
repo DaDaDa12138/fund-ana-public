@@ -30,7 +30,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: fund-ana:1.9.793
+    image: fund-ana:1.9.794
     container_name: fund-ana-web
     restart: unless-stopped
     logging: *project-logging
@@ -73,7 +73,7 @@ services:
     # Production automation runs on GitHub-hosted Actions. Opt in only for
     # a separate local deployment; never run both against divergent state.
     profiles: [local-scheduler]
-    image: fund-ana:1.9.793
+    image: fund-ana:1.9.794
     container_name: fund-ana-scheduler
     restart: unless-stopped
     logging: *project-logging
