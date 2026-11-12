@@ -48,7 +48,7 @@ GitHub明确可能延迟或丢弃schedule事件。有限补偿降低漏跑风险
 9. 状态保存成功后，才同步私有daily-reports。报告同步失败可用publish_only补同步；不能退回旧状态制造相同代际。旧原件、manifest和失败收据不回写。
 10. 详细日志仅按允许清单收集，对两种token及Basic编码脱敏后，上传私有 `cloud-action-diagnostics-YYYYMM` Release。公开日志不打印名单、NAV、bundle或失败任务尾部，不使用公开artifact上传业务材料。诊断保存失败保留失败状态，不能伪称日志已经保存。
 
-原degraded不改写；仅已验证的明确空收益/初始化异常排除，并通过DB证明、SHA核验CSV无交集、计数及原发布门禁后允许自动化带warning完成。其他API、计算、恢复、持久化及同步失败仍失败。
+原degraded不改写；仅已验证的明确空收益、初始化异常或被拒旧响应对应的正式排除，并通过DB证明、SHA核验CSV无交集、计数及原发布门禁后允许自动化带warning完成。旧响应状态还必须重新核验当前排名来源SHA、代码、净值、日期及十项收益，使用`github-safe-publication-completion-v2`绑定证明；缺证、正式重叠或额外失败仍阻断。旧v1收据兼容保留。其他API、计算、恢复、持久化及同步失败仍失败。
 
 ## 初次切换与回退
 

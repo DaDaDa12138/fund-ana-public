@@ -105,10 +105,21 @@ def completed_daily(checks: list[dict], now: datetime) -> str | None:
             continue
         if check["status"] in {"published_with_warnings", "unchanged_with_warnings"}:
             proof = check.get("nonblocking_validation") or {}
-            if (proof.get("contract") != "github-safe-publication-completion-v1"
+            if (proof.get("contract") not in {"github-safe-publication-completion-v1", "github-safe-publication-completion-v2"}
                     or proof.get("status") != "verified" or proof.get("formal_overlap_count") != 0
                     or proof.get("blocking_count") != 0):
                 continue
+            if proof["contract"].endswith("-v2"):
+                superseded = proof.get("superseded_refresh_proofs")
+                if (not isinstance(superseded, list) or not superseded
+                        or check.get("task_warning_reason") != "period_return_refresh_superseded"
+                        or any(not isinstance(item, dict) or item.get("fcode") not in proof.get("excluded_fcodes", [])
+                               or item.get("status") != "superseded_refresh_rejected"
+                               or item.get("returns_and_nav") != "reprojected_current_rank"
+                               or item.get("nav_date") != (check.get("publication") or {}).get("nav_date")
+                               or not re.fullmatch(r"[0-9a-f]{64}", str(item.get("accepted_source_sha256") or ""))
+                               for item in superseded)):
+                    continue
         elif check.get("task_status") not in {"success", "skipped"}:
             continue
         try:

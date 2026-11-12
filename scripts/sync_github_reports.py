@@ -33,15 +33,17 @@ def validate_check(value: dict) -> None:
         proof = value.get("nonblocking_validation") or {}
         rejections = proof.get("rejection_proofs", [])
         missing = proof.get("missing_returns_proofs", [])
+        superseded = proof.get("superseded_refresh_proofs", [])
         if (value.get("task_status") != "degraded" or proof.get("status") != "verified"
-                or proof.get("contract") != "github-safe-publication-completion-v1"
+                or proof.get("contract") != ("github-safe-publication-completion-v2" if superseded else "github-safe-publication-completion-v1")
                 or proof.get("blocking_count") != 0 or proof.get("formal_overlap_count") != 0
                 or not proof.get("excluded_fcodes") or not isinstance(rejections, list)
-                or not isinstance(missing, list) or not (rejections or missing)
-                or not all(isinstance(item, dict) for item in [*rejections, *missing])):
+                or not isinstance(missing, list) or not isinstance(superseded, list) or not (rejections or missing or superseded)
+                or not all(isinstance(item, dict) for item in [*rejections, *missing, *superseded])):
             raise ReportExportError("warning_check_proof_missing")
-        codes = [item.get("fcode") for item in [*rejections, *missing]]
-        expected_reason = ("period_return_initialization_placeholder_quarantined" if rejections
+        codes = [item.get("fcode") for item in [*rejections, *missing, *superseded]]
+        expected_reason = ("period_return_refresh_superseded" if superseded else
+                           "period_return_initialization_placeholder_quarantined" if rejections
                            else "period_return_unavailable_without_returns")
         if (any(not isinstance(code, str) or not re.fullmatch(r"[0-9]{6}", code) for code in codes)
                 or len(set(codes)) != len(codes) or sorted(codes) != proof["excluded_fcodes"]
@@ -49,7 +51,12 @@ def validate_check(value: dict) -> None:
                 or any(item.get("status") != "missing" or item.get("returns_and_provenance") != "all_null"
                        for item in missing)
                 or any(not re.fullmatch(r"[0-9a-f]{64}", str(item.get("rejection_sha256") or ""))
-                       for item in rejections)):
+                       for item in rejections)
+                or any(item.get("status") != "superseded_refresh_rejected"
+                       or item.get("returns_and_nav") != "reprojected_current_rank"
+                       or not re.fullmatch(r"[0-9a-f]{64}", str(item.get("accepted_source_sha256") or ""))
+                       or not re.fullmatch(r"[0-9]{4}-[0-9]{2}-[0-9]{2}", str(item.get("nav_date") or ""))
+                       for item in superseded)):
             raise ReportExportError("warning_check_proof_missing")
     for key in ("github_run_id", "attempt"):
         if not re.fullmatch(r"[0-9]{1,20}", str(value.get(key) or "")):
@@ -85,7 +92,8 @@ def merge_export(repository: Path, check: dict, bundle_dir: Path | None) -> dict
         if check["status"] in {"published_with_warnings", "unchanged_with_warnings"}:
             proof = check["nonblocking_validation"]
             csv_hash = next(item["sha256"] for item in bundle["files"] if item["path"] == "formal.csv")
-            if proof.get("formal_csv_sha256") != csv_hash or proof.get("publication_run_id") != publication["run_id"]:
+            if (proof.get("formal_csv_sha256") != csv_hash or proof.get("publication_run_id") != publication["run_id"]
+                    or any(item["nav_date"] != publication.get("nav_date") for item in proof.get("superseded_refresh_proofs", []))):
                 raise ReportExportError("warning_bundle_proof_mismatch")
         day = datetime.fromisoformat(publication["committed_at"]).date().isoformat()
         relative = Path("reports") / day / publication["run_id"] / publication["revision"]

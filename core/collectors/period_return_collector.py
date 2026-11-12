@@ -15,7 +15,7 @@ from utils.period_return_snapshot import (
     RETURN_FIELDS, RETURN_PROVENANCE_FIELDS, has_dated_period_snapshot,
     select_return_update, snapshot_date, local_observation_time, period_collection_blocking_count,
     build_period_snapshot,
-    period_number,
+    period_number, verified_current_rank_snapshot,
     RETURN_REJECTION_FIELDS, INITIALIZATION_QUARANTINE,
     initialization_placeholder, verified_initialization_quarantine,
 )
@@ -59,37 +59,7 @@ class PeriodReturnCollector(FundCollector):
 
     @staticmethod
     def _verified_current_rank_snapshot(record: dict) -> bool:
-        """Reproject the newer stored response before isolating an old refresh.
-
-        A digest alone proves the payload was retained, not that the database
-        values still correspond to it. This exemption needs the rank response's
-        identity, NAV, date and all ten return fields to match the current row.
-        """
-        if (record.get("period_return_source") != "fundMNRank"
-                or not has_dated_period_snapshot(record, verify_payload=True)
-                or not any(record.get(field) is not None for field in RETURN_FIELDS)):
-            return False
-        nav_date = snapshot_date(record.get("latest_nav_date"))
-        observed_at = local_observation_time(record.get("period_return_observed_at"))
-        if (nav_date is None or nav_date > datetime.now().date()
-                or snapshot_date(record.get("period_return_date")) != nav_date
-                or observed_at is None or observed_at > datetime.now()):
-            return False
-        rank_fields = ("SYL_Z", "SYL_Y", "SYL_3Y", "SYL_6Y", "SYL_1N",
-                       "SYL_2N", "SYL_3N", "SYL_5N", "SYL_JN", "SYL_LN")
-        try:
-            payload = json.loads(record["period_return_source_json"])
-            return bool(
-                isinstance(payload, dict) and payload.get("FCODE") == record.get("fcode")
-                and snapshot_date(payload.get("FSRQ")) == nav_date
-                and period_number(payload.get("DWJZ")) is not None
-                and period_number(payload["DWJZ"]) > 0
-                and period_number(payload["DWJZ"]) == record.get("latest_nav")
-                and all(source in payload and period_number(payload[source]) == record.get(field)
-                        for field, source in zip(RETURN_FIELDS, rank_fields))
-            )
-        except (TypeError, ValueError, KeyError):
-            return False
+        return verified_current_rank_snapshot(record, now=datetime.now())
 
     @classmethod
     def _superseded_refresh_rejected(cls, record: dict) -> bool:

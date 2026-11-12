@@ -330,3 +330,129 @@ def test_unchanged_warning_requires_ready_matching_snapshot_and_complete_mainten
     else:
         status, proof = hosted_task_outcome(result, 0, after, after, output, Path(db.db_path))
         assert status == "unchanged_with_warnings" and proof["formal_overlap_count"] == 0
+
+
+def superseded_fixture(tmp_path, *, cooldown=False):
+    output, bundle, check, db, result, before, after = warning_fixture(tmp_path)
+    from core.utils.period_return_snapshot import build_period_snapshot
+    fields = ('SYL_Z','SYL_Y','SYL_3Y','SYL_6Y','SYL_1N','SYL_2N','SYL_3N','SYL_5N','SYL_JN','SYL_LN')
+    values = dict(zip(RETURN_FIELDS, [0, None, 1, 2, 3, 4, 5, 6, 7, 8]))
+    payload = {'FCODE': '000002', 'FSRQ': '2026-01-01', 'DWJZ': '1.25',
+               **{raw: values[field] for field, raw in zip(RETURN_FIELDS, fields)}}
+    snapshot = build_period_snapshot(values, as_of_date='2026-01-01', observed_at=datetime(2026, 1, 2),
+                                     source='fundMNRank', source_payload=payload)
+    row = {k: v.isoformat() if hasattr(v, 'isoformat') else v for k, v in snapshot.items()}
+    row.update(latest_nav=1.25, latest_nav_date='2026-01-01', period_return_last_status='superseded_refresh_rejected',
+               **{field: None for field in RETURN_REJECTION_FIELDS})
+    with sqlite3.connect(db.db_path) as conn:
+        conn.execute('UPDATE fund_returns SET '+','.join(k+'=?' for k in row)+" WHERE fcode='000002'", list(row.values()))
+    outcome = {'fcode': '000002', 'status': 'superseded_refresh_rejected', 'superseded_refresh_rejected': True}
+    summary = result['period_return_collection']
+    summary.update(initialization_placeholder_fcodes=[], superseded_refresh_fcodes=['000002'],
+                   outcomes=[] if cooldown else [outcome], cooldown_outcomes=[outcome] if cooldown else [],
+                   target_count=0 if cooldown else 1, failed_count=0 if cooldown else 1, cooldown_count=1 if cooldown else 0)
+    result['warning_reason'] = 'period_return_refresh_superseded'
+    return output, bundle, check, db, result, before, after
+
+
+@pytest.mark.parametrize('cooldown', [False, True])
+def test_superseded_excluded_current_rank_is_reprojected_and_versioned(tmp_path, cooldown):
+    output, _, check, db, result, before, after = superseded_fixture(tmp_path, cooldown=cooldown)
+    original = deepcopy(result)
+    status, proof = hosted_task_outcome(result, 0, before, after, output, Path(db.db_path))
+    assert status == 'published_with_warnings' and result == original
+    assert proof['contract'] == 'github-safe-publication-completion-v2'
+    assert proof['excluded_fcodes'] == ['000002']
+    assert proof['superseded_refresh_proofs'][0]['returns_and_nav'] == 'reprojected_current_rank'
+    check.update(status=status, task_status='degraded', nonblocking_validation=proof,
+                 task_warning_reason=result['warning_reason'], publication_sync_status='verified_current')
+    directory = tmp_path/'repository'; directory.mkdir()
+    assert merge_export(directory, check, output)['status'] == status
+    check.update(job='daily_refresh', executor='github_hosted', collection_requested=True, cloud_state_commit='a'*40,
+                 checked_at='2026-01-02T08:00:00+08:00', finished_at='2026-01-02T10:00:00+08:00')
+    assert completed_daily([check], datetime.fromisoformat('2026-01-02T11:00:00+08:00')) == '12345'
+    proof['superseded_refresh_proofs'] = []
+    assert completed_daily([check], datetime.fromisoformat('2026-01-02T11:00:00+08:00')) is None
+
+
+@pytest.mark.parametrize('field', RETURN_FIELDS)
+def test_superseded_proof_reprojects_all_ten_values_including_null_and_zero(tmp_path, field):
+    output, _, _, db, result, before, after = superseded_fixture(tmp_path)
+    with sqlite3.connect(db.db_path) as conn:
+        value = conn.execute('SELECT '+field+" FROM fund_returns WHERE fcode='000002'").fetchone()[0]
+        conn.execute('UPDATE fund_returns SET '+field+"=? WHERE fcode='000002'", (0 if value is None else value+1,))
+    with pytest.raises(ReportExportError, match='superseded_snapshot_exclusion_not_verified'):
+        hosted_task_outcome(result, 0, before, after, output, Path(db.db_path))
+
+
+@pytest.mark.parametrize('fault', ['missing_row','source','digest','payload_code','payload_nav','payload_date',
+                                  'future_observation','publication_date','rejection','status','transport','overlap'])
+def test_superseded_status_alone_cannot_certify_completion(tmp_path, fault):
+    output, bundle, _, db, result, before, after = superseded_fixture(tmp_path)
+    with sqlite3.connect(db.db_path) as conn:
+        if fault == 'missing_row': conn.execute("DELETE FROM fund_returns")
+        elif fault in {'payload_code','payload_nav','payload_date'}:
+            raw = conn.execute("SELECT period_return_source_json FROM fund_returns").fetchone()[0]
+            data = json.loads(raw)
+            field, value = {'payload_code': ('FCODE','000003'), 'payload_nav': ('DWJZ','9'),
+                            'payload_date': ('FSRQ','2025-12-31')}[fault]
+            data[field] = value; raw = json.dumps(data)
+            conn.execute('UPDATE fund_returns SET period_return_source_json=?,period_return_source_sha256=?',
+                         (raw, hashlib.sha256(raw.encode()).hexdigest()))
+        elif fault not in {'transport','overlap'}:
+            field, value = {'source': ('period_return_source','fundMNPeriodIncrease'),
+                            'digest': ('period_return_source_sha256','f'*64),
+                            'future_observation': ('period_return_observed_at','2099-01-02T00:00:00'),
+                            'publication_date': ('latest_nav_date','2026-01-02'),
+                            'rejection': ('period_return_rejection_json','unverified rejection'),
+                            'status': ('period_return_last_status','request_failed')}[fault]
+            conn.execute('UPDATE fund_returns SET '+field+'=?', (value,))
+    if fault == 'transport': result['period_return_collection']['outcomes'][0]['status'] = 'request_failed'
+    if fault == 'overlap':
+        path=output/'formal.csv';path.write_text(path.read_text(encoding='utf-8-sig').replace('000001','000002'),encoding='utf-8-sig')
+        next(x for x in bundle['files'] if x['path']=='formal.csv').update(sha256=sha256(path),bytes=path.stat().st_size)
+        write_json(output/'bundle.json',bundle)
+    with pytest.raises(ReportExportError):
+        hosted_task_outcome(result, 0, before, after, output, Path(db.db_path))
+
+
+@pytest.mark.parametrize('fault',['absent','contract','status','projection','hash','date','code','duplicate','reason'])
+def test_report_sync_rejects_invalid_superseded_proof(tmp_path, fault):
+    output, _, check, db, result, before, after = superseded_fixture(tmp_path)
+    status, proof = hosted_task_outcome(result, 0, before, after, output, Path(db.db_path))
+    check.update(status=status, task_status='degraded', nonblocking_validation=proof,
+                 task_warning_reason=result['warning_reason'], publication_sync_status='verified_current')
+    item=proof['superseded_refresh_proofs'][0]
+    if fault=='absent': proof['superseded_refresh_proofs']=[]
+    elif fault=='contract': proof['contract']='github-safe-publication-completion-v1'
+    elif fault=='status': item['status']='request_failed'
+    elif fault=='projection': item['returns_and_nav']='unknown'
+    elif fault=='hash': item['accepted_source_sha256']='not-a-sha'
+    elif fault=='date': item['nav_date']='2025-12-31'
+    elif fault=='code': item['fcode']='000003'
+    elif fault=='duplicate': proof['superseded_refresh_proofs']*=2
+    elif fault=='reason': check['task_warning_reason']='period_return_unavailable_without_returns'
+    directory=tmp_path/'repo';directory.mkdir()
+    with pytest.raises(ReportExportError): merge_export(directory,check,output)
+
+
+def test_superseded_initializer_and_missing_exclusions_are_verified_together(tmp_path):
+    output, _, _, db, result, before, after = superseded_fixture(tmp_path)
+    other = warning_fixture(tmp_path/'initializer')
+    with sqlite3.connect(other[3].db_path) as source:
+        source.row_factory=sqlite3.Row
+        row=dict(source.execute('SELECT * FROM fund_returns').fetchone())
+    row['fcode']='000003'
+    proof=json.loads(row['period_return_rejection_json']);proof['fcode']='000003'
+    raw=json.dumps(proof);row.update(period_return_rejection_json=raw,period_return_rejection_sha256=hashlib.sha256(raw.encode()).hexdigest())
+    with sqlite3.connect(db.db_path) as conn:
+        conn.execute('INSERT INTO fund_returns ('+','.join(row)+') VALUES ('+','.join('?' for _ in row)+')',list(row.values()))
+        conn.execute("INSERT INTO fund_returns (fcode,period_return_last_status) VALUES ('000004','missing')")
+    summary=result['period_return_collection']
+    summary.update(target_count=3,failed_count=3,pending_count=3,initialization_placeholder_fcodes=['000003'],nonblocking_missing_fcodes=['000004'])
+    summary['outcomes'].extend([
+        {'fcode':'000003','status':'initialization_placeholder_quarantined','initialization_placeholder_quarantined':True,'rejection_sha256':row['period_return_rejection_sha256']},
+        {'fcode':'000004','status':'missing','unavailable_without_returns':True}])
+    status,proof=hosted_task_outcome(result,0,before,after,output,Path(db.db_path))
+    assert status=='published_with_warnings' and proof['excluded_fcodes']==['000002','000003','000004']
+    assert len(proof['superseded_refresh_proofs'])==len(proof['rejection_proofs'])==len(proof['missing_returns_proofs'])==1

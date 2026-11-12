@@ -10,7 +10,7 @@ import sqlite3
 from backend.github_reports import ReportExportError, task_outcome, verify_bundle
 from core.utils.period_return_snapshot import (
     RETURN_FIELDS, RETURN_PROVENANCE_FIELDS, RETURN_REJECTION_FIELDS,
-    period_collection_blocking_count, verified_initialization_quarantine,
+    period_collection_blocking_count, verified_initialization_quarantine, verified_current_rank_snapshot,
 )
 
 
@@ -19,7 +19,8 @@ def hosted_task_outcome(result: dict, return_code: int, before: dict, after: dic
     """Unknown degradation still fails. No scheduler status or gate is changed.
 
     The sole exception is a completed, committed publication with a
-    verified initializer quarantine and/or genuinely empty excluded returns.
+    verified initializer quarantine, genuinely empty excluded returns, or a
+    reprojected current rank snapshot retained after an older refresh, also excluded.
     It requires fresh DB rejection proof, reconciled collection counts and
     zero overlap with the SHA-verified formal CSV. An unchanged snapshot also
     requires exact ready-signature and completed-maintenance evidence. Busy,
@@ -34,7 +35,7 @@ def hosted_task_outcome(result: dict, return_code: int, before: dict, after: dic
     if (return_code != 0 or result.get("error") or result.get("task_terminal") is not True
             or result.get("background_continues") is not False
             or reason not in {"period_return_initialization_placeholder_quarantined",
-                              "period_return_unavailable_without_returns"}
+                              "period_return_unavailable_without_returns", "period_return_refresh_superseded"}
             or result.get("degraded_stage") != "collect-period-returns"):
         raise ReportExportError("degraded_completion_not_verified")
     for key, value in result.items():
@@ -72,10 +73,13 @@ def hosted_task_outcome(result: dict, return_code: int, before: dict, after: dic
             raise ValueError("not_nonblocking")
         if summary.get("screening_blocked") is not False or summary.get("blocking_count") != 0:
             raise ValueError("missing_explicit_nonblocking_evidence")
-        if summary.get("quarantined_date_lag_fcodes") or summary.get("superseded_refresh_fcodes"):
+        if summary.get("quarantined_date_lag_fcodes"):
             raise ValueError("unsupported_warning")
-        if (bool(summary.get("initialization_placeholder_fcodes"))
-                != (reason == "period_return_initialization_placeholder_quarantined")):
+        superseded = summary.get("superseded_refresh_fcodes", [])
+        expected_reason = ("period_return_refresh_superseded" if superseded else
+                           "period_return_initialization_placeholder_quarantined" if summary.get("initialization_placeholder_fcodes")
+                           else "period_return_unavailable_without_returns")
+        if reason != expected_reason:
             raise ValueError("warning_reason_exclusion_mismatch")
         failed, cooldown = summary["failed_count"], summary["cooldown_count"]
         if (summary["target_count"] != summary["saved_fund_count"] + failed
@@ -83,7 +87,7 @@ def hosted_task_outcome(result: dict, return_code: int, before: dict, after: dic
                 or type(summary.get("unselected_count")) is not int or summary["unselected_count"] < 0
                 or summary["pending_count"] != failed + cooldown + summary["unselected_count"]):
             raise ValueError("unbalanced_counts")
-        codes = sorted(summary["initialization_placeholder_fcodes"] + summary["nonblocking_missing_fcodes"])
+        codes = sorted(summary["initialization_placeholder_fcodes"] + summary["nonblocking_missing_fcodes"] + superseded)
         if not codes or any(not re.fullmatch(r"[0-9]{6}", code) for code in codes):
             raise ValueError("invalid_codes")
     except (KeyError, TypeError, ValueError) as exc:
@@ -101,6 +105,7 @@ def hosted_task_outcome(result: dict, return_code: int, before: dict, after: dic
         raise ReportExportError("quarantined_fund_in_formal_report")
     proofs = []
     missing_proofs = []
+    superseded_proofs = []
     with closing(sqlite3.connect(database.resolve().as_uri() + "?mode=ro", uri=True)) as conn:
         conn.row_factory = sqlite3.Row
         for code in codes:
@@ -113,6 +118,15 @@ def hosted_task_outcome(result: dict, return_code: int, before: dict, after: dic
                 if observed.get("rejection_sha256") != row.get("period_return_rejection_sha256"):
                     raise ReportExportError("quarantine_rejection_binding_mismatch")
                 proofs.append({"fcode": code, "rejection_sha256": row["period_return_rejection_sha256"]})
+            elif code in superseded:
+                if (row.get("period_return_last_status") != "superseded_refresh_rejected"
+                        or any(row.get(field) is not None for field in RETURN_REJECTION_FIELDS)
+                        or str(row.get("latest_nav_date") or "")[:10] != bundle["publication"].get("nav_date")
+                        or not verified_current_rank_snapshot(row)):
+                    raise ReportExportError("superseded_snapshot_exclusion_not_verified")
+                superseded_proofs.append({"fcode": code, "status": "superseded_refresh_rejected",
+                    "returns_and_nav": "reprojected_current_rank", "nav_date": str(row["latest_nav_date"])[:10],
+                    "accepted_source_sha256": row["period_return_source_sha256"]})
             else:
                 if (not row or row.get("period_return_last_status") != "missing"
                         or any(row.get(field) is not None for field in
@@ -121,9 +135,10 @@ def hosted_task_outcome(result: dict, return_code: int, before: dict, after: dic
                 missing_proofs.append({"fcode": code, "status": "missing",
                                        "returns_and_provenance": "all_null"})
     return "published_with_warnings" if changed else "unchanged_with_warnings", {
-        "contract": "github-safe-publication-completion-v1", "status": "verified",
+        "contract": "github-safe-publication-completion-v2" if superseded_proofs else "github-safe-publication-completion-v1", "status": "verified",
         "blocking_count": 0, "excluded_fcodes": codes, "rejection_proofs": proofs,
         "missing_returns_proofs": missing_proofs,
+        **({"superseded_refresh_proofs": superseded_proofs} if superseded_proofs else {}),
         "formal_overlap_count": 0, "formal_csv_sha256": next(x["sha256"] for x in bundle["files"] if x["path"] == "formal.csv"),
         "scheduler_status_preserved": "degraded", "publication_run_id": after["run_id"],
     }
