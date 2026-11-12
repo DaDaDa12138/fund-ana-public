@@ -1,0 +1,53 @@
+{
+  "name": "tiantian-fund-api",
+  "version": "v1.0.3",
+  "description": "天天基金网 Node.js API service",
+  "main": "src/index.js",
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "start": "node index.js",
+    "lint": "eslint . --ext .js",
+    "docs:dev": "vuepress dev docs",
+    "docs:build": "vuepress build docs",
+    "test": "cross-env NODE_ENV=test nyc --reporter=lcov mocha --require ./test/fixtures.js ./test/**/*.spec.js --timeout 30s",
+    "test-reporter": "cross-env NODE_ENV=test nyc --reporter=lcov mocha --require ./test/fixtures.js ./test/**/*.spec.js --reporter json > test-results.json --timeout 30s"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kouchao/TiantianFundApi.git"
+  },
+  "keywords": [
+    "天天基金网",
+    "东方财富",
+    "基金api",
+    "基金接口"
+  ],
+  "author": "kouchao",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/kouchao/TiantianFundApi/issues"
+  },
+  "homepage": "https://github.com/kouchao/TiantianFundApi#readme",
+  "dependencies": {
+    "@koa/router": "^12.0.1",
+    "axios": "^1.6.8",
+    "glob": "^10.3.12",
+    "koa": "^2.15.3"
+  },
+  "devDependencies": {
+    "@vuepress/bundler-vite": "2.0.0-rc.9",
+    "@vuepress/client": "2.0.0-rc.9",
+    "@vuepress/theme-default": "2.0.0-rc.24",
+    "cross-env": "^7.0.3",
+    "eslint": "^9.0.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-prettier": "^5.1.3",
+    "mocha": "^10.4.0",
+    "nyc": "^15.1.0",
+    "prettier": "^3.2.5",
+    "vue": "^3.4.21",
+    "vuepress": "^2.0.0-rc.9"
+  }
+}

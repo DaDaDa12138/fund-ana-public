@@ -1,0 +1,18 @@
+[Unit]
+Description=Fund-ANA Web With Embedded Scheduler
+After=network.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/mnt/Project/Fund-ANA
+Environment=PYTHONUNBUFFERED=1
+Environment=FUND_ANA_DISABLE_EMBEDDED_SCHEDULER=1
+ExecStart=/mnt/Project/Fund-ANA/.venv/bin/gunicorn --workers 1 --threads 8 --bind 0.0.0.0:8090 --access-logfile - --error-logfile - backend.app:app
+Restart=always
+RestartSec=5
+KillSignal=SIGINT
+TimeoutStopSec=30
+
+[Install]
+WantedBy=multi-user.target

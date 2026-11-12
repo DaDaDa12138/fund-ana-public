@@ -1,0 +1,17 @@
+[Unit]
+Description=Fund-ANA External Scheduler
+After=network.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/mnt/Project/Fund-ANA
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/mnt/Project/Fund-ANA/.venv/bin/python /mnt/Project/Fund-ANA/scripts/run_scheduler.py --force
+Restart=always
+RestartSec=5
+KillSignal=SIGINT
+TimeoutStopSec=30
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,114 @@
+x-project-logging: &project-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  tiantian-api:
+    build:
+      context: ./deploy/tiantian-api
+      dockerfile: Dockerfile
+    image: fund-ana-tiantian:1.9.788
+    container_name: fund-ana-tiantian-api
+    restart: unless-stopped
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    pids_limit: 128
+    mem_limit: 256m
+    cpus: 1
+    logging: *project-logging
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/healthz').then(r => { if (!r.ok) process.exit(1); }).catch(() => process.exit(1));"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: fund-ana:1.9.792
+    container_name: fund-ana-web
+    restart: unless-stopped
+    logging: *project-logging
+    depends_on:
+      tiantian-api:
+        condition: service_healthy
+    environment:
+      TZ: Asia/Shanghai
+      PYTHONUNBUFFERED: "1"
+      FUND_ANA_DISABLE_EMBEDDED_SCHEDULER: "1"
+      FUND_ANA_WEB_PORT: "8090"
+      FUND_ANA_GUNICORN_WORKERS: "1"
+      FUND_ANA_GUNICORN_THREADS: "8"
+    command: ["/app/deploy/docker/entrypoint-web.sh"]
+    ports:
+      - "8090:8090"
+    dns:
+      - 192.168.0.215
+      - 223.5.5.5
+    volumes:
+      - ./config:/app/config
+      - ./backend/data:/app/backend/data
+      - ./reports:/app/reports
+      - ./logs:/app/logs
+      - ./core/logs:/app/core/logs
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8090/api/healthz', timeout=5).read()",
+        ]
+      interval: 30s
+      timeout: 15s
+      retries: 5
+      start_period: 30s
+
+  scheduler:
+    # Production automation runs on GitHub-hosted Actions. Opt in only for
+    # a separate local deployment; never run both against divergent state.
+    profiles: [local-scheduler]
+    image: fund-ana:1.9.792
+    container_name: fund-ana-scheduler
+    restart: unless-stopped
+    logging: *project-logging
+    environment:
+      TZ: Asia/Shanghai
+      PYTHONUNBUFFERED: "1"
+      FUND_ANA_STORAGE_LIFECYCLE_PROJECT_ROOT: /mnt/Project/Fund-ANA
+      FUND_ANA_STORAGE_FD_AUDIT_SOCKET: /app/backend/data/storage_fd_audit.sock
+    command: ["/app/deploy/docker/entrypoint-scheduler.sh"]
+    dns:
+      - 192.168.0.215
+      - 223.5.5.5
+    volumes:
+      # One mount for both paths: rename across two independent bind mounts
+      # returns EXDEV even when their host st_dev values match.
+      - /mnt:/mnt
+      - ./config:/app/config:ro
+      - ./backend/data:/app/backend/data
+      - ./reports:/app/reports
+      - ./logs:/app/logs
+      - ./core/logs:/app/core/logs
+    depends_on:
+      tiantian-api:
+        condition: service_healthy
+      web:
+        condition: service_started
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import json; from datetime import datetime, timedelta; from pathlib import Path; p=Path('/app/backend/data/scheduler_state.json'); data=json.loads(p.read_text(encoding='utf-8')) if p.exists() else {}; hb=str(data.get('last_heartbeat_at') or ''); running=bool(data.get('scheduler_running')); ok=running and hb and datetime.now()-datetime.fromisoformat(hb) < timedelta(minutes=3); raise SystemExit(0 if ok else 1)",
+        ]
+      interval: 30s
+      timeout: 15s
+      retries: 5
+      start_period: 30s

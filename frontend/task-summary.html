@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>任务摘要 - Fund-ANA</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/styles.css?v=1.9.783" />
+  </head>
+  <body class="layout-wide">
+    <div class="dashboard-app">
+      <header class="site-header">
+        <div class="site-shell">
+          <a class="site-brand" href="/">
+            <span class="site-brand-mark">FA</span>
+            <span class="site-brand-copy">
+              <strong>Fund-ANA</strong>
+              <small>Bond Fund Screening</small>
+            </span>
+          </a>
+          <nav class="page-nav page-nav-top">
+            <a href="/">总览</a>
+            <a href="/recommendations">推荐</a>
+            <a href="/favorites">收藏</a>
+            <a href="/tracker">跟踪</a>
+            <a href="/reports">文件</a>
+            <a href="/task-summary" class="active" aria-current="page">任务</a>
+            <a href="/operations">运行</a>
+            <a href="/api-settings">接口设置</a>
+          </nav>
+        </div>
+      </header>
+
+      <section class="page-hero">
+        <div class="page-hero-shell">
+          <div class="page-hero-main">
+            <div class="eyebrow">Task Summary</div>
+            <h1>任务摘要</h1>
+            <p>阶段与主因</p>
+            <div class="page-hero-actions">
+              <a class="preview-link" href="#taskStageCard">阶段</a>
+              <a class="preview-link" href="#taskReasonCard">主因</a>
+            </div>
+          </div>
+          <aside class="page-hero-side">
+            <div class="hero-badge-stack">
+              <div id="taskSummaryHeaderRunBadge" class="status-badge">
+                <span class="status-dot"></span>
+                <span>状态检测中…</span>
+              </div>
+              <div id="taskSummaryHeaderHealthBadge" class="version-badge">数据源检测中…</div>
+            </div>
+            <details class="compact-disclosure hero-details"><summary>发布详情</summary><div id="taskSummaryHeroMeta" class="hero-meta-card"></div></details>
+          </aside>
+        </div>
+      </section>
+
+      <main class="dashboard-main">
+        <section class="card card-emphasis">
+          <div class="card-title-row">
+            <div>
+              <div class="card-title">任务总览</div>
+              <div id="taskSummaryMeta" class="card-subtitle">正在加载…</div>
+            </div>
+          </div>
+          <div id="taskSummaryStats" class="stats-grid compact"></div>
+          <div id="taskSummaryNarrative" class="info-banner"></div>
+          <div id="taskSummaryQuickNav" class="active-filter-list recommendation-list-hints task-summary-quick-nav"></div>
+        </section>
+
+        <section class="card page-section-anchor page-list-surface" id="taskStageCard">
+          <div class="card-title-row">
+            <div>
+              <div class="card-title">阶段压缩</div>
+              <div class="card-subtitle">主链阶段</div>
+            </div>
+          </div>
+          <div id="taskStageStats" class="stats-grid compact"></div>
+          <div id="taskStageTable" class="table-shell"></div>
+          <div class="subsection-shell page-section-anchor" id="taskAuditSection">
+            <div class="subsection-header">
+              <div>
+                <div class="subsection-title">固定阈值审计</div>
+                <div class="subsection-subtitle">次级审计分支，按需展开查看</div>
+              </div>
+              <button id="taskAuditToggleBtn" type="button" class="secondary subsection-toggle">收起固定阈值审计</button>
+            </div>
+            <div id="taskAuditNarrative" class="subtle-panel task-summary-audit-note subsection-body"></div>
+            <div id="taskAuditTable" class="table-shell subsection-body"></div>
+          </div>
+        </section>
+
+        <section class="card page-section-anchor" id="taskReasonCard">
+          <div class="card-title-row">
+            <div>
+              <div class="card-title">主原因摘要</div>
+              <div class="card-subtitle">主要原因</div>
+            </div>
+          </div>
+          <div id="taskReasonCoreStats" class="stats-grid compact"></div>
+          <div class="subsection-shell page-section-anchor" id="taskReasonExtendedSection">
+            <div class="subsection-header">
+              <div>
+                <div class="subsection-title">扩展诊断</div>
+                <div class="subsection-subtitle">责任指标、质量拦截和高分摩擦样本</div>
+              </div>
+              <button id="taskReasonExtendedToggleBtn" type="button" class="secondary subsection-toggle">展开扩展诊断</button>
+            </div>
+            <div id="taskReasonStats" class="stats-grid compact subsection-body"></div>
+          </div>
+          <div id="taskReasonNarrative" class="info-banner"></div>
+        </section>
+      </main>
+    </div>
+    <script src="/shared.js?v=1.9.783"></script>
+    <script src="/version-widget.js?v=1.9.783"></script>
+    <script src="/task-summary.js?v=1.9.783"></script>
+  </body>
+</html>

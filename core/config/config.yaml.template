@@ -1,0 +1,280 @@
+# Source distribution template. Set a new local web.secret_key before deployment.
+api:
+  autostock:
+    enabled: false
+    base_url: https://api.autostock.cn/v1
+    batch:
+      size: 50
+      verify_size: 50
+    rank_page_size: 400
+    rate_limit:
+      max_calls_per_hour: 100
+      min_interval: 2
+    retry:
+      max_attempts: 3
+      timeout: 30
+      wait_seconds: 60
+    verification:
+      budget:
+        reserve_calls: 10
+        max_fetch_calls_per_run: 50
+      residual_missing:
+        max_count: 2
+        max_ratio: 0.002
+      cache:
+        ttl_seconds: 14400
+      sample_size: 100
+      tolerance:
+        nav: 1.0
+        nav_absolute: 0.001
+        nav_relative: 1.0
+        return: 5.0
+        return_absolute: 0.5
+        return_relative: 5.0
+        return_small_base_threshold: 1.0
+  base_params:
+    deviceid: 874C427C-7C24-4980-A835-66FD40B67605
+    plat: Iphone
+    product: EFund
+    version: 6.5.5
+  base_url: http://tiantian-api:3000
+  circuit_breaker:
+    enabled: false
+    failure_threshold: 5
+    timeout_duration: 300
+  headers:
+    validmark: aKVEnBbJF9Nip2Wjf4de/fSvA8W3X3iB4L6vT0Y5cxvZbEfEm17udZKUD2qy37dLRY3bzzHLDv+up/Yn3OTo5Q==
+  rate_limit:
+    max_workers: 40
+    min_interval: 0
+    qps: 120
+    random_delay:
+    - 0
+    - 0
+  retry:
+    backoff_factor: 1.5
+    max_attempts: 2
+    timeout: 6
+  tiantian:
+    base_params:
+      deviceid: 874C427C-7C24-4980-A835-66FD40B67605
+      plat: Iphone
+      product: EFund
+      version: 6.5.5
+    base_url: http://tiantian-api:3000
+    circuit_breaker:
+      enabled: true
+      failure_threshold: 5
+      timeout_duration: 300
+      circuit_breaker_max_wait: 0
+    headers:
+      validmark: aKVEnBbJF9Nip2Wjf4de/fSvA8W3X3iB4L6vT0Y5cxvZbEfEm17udZKUD2qy37dLRY3bzzHLDv+up/Yn3OTo5Q==
+    rate_limit:
+      max_workers: 40
+      min_interval: 0
+      qps: 120
+      random_delay:
+      - 0
+      - 0
+    retry:
+      backoff_factor: 1.5
+      max_attempts: 2
+      timeout: 6
+collection:
+  detail:
+    batch_size: 500
+    fast_qps: 180
+    fast_workers: 25
+    workers: 10
+  history:
+    default_years: 5
+    page_size: 1000
+  incremental:
+    max_age_days: 1095
+    only_active: false
+    qps: 60
+    stale_threshold_days: 1095
+    workers: 15
+  initial:
+    batch_interval: 60
+    batch_size: 2000
+    qps: 60
+    workers: 30
+database:
+  batch_size: 1000
+  nav_history_archive_maintenance:
+    archive_table_name: fund_nav_history_archive
+    archive_target_dir: database/archives
+    operator_assignments:
+      data_reviewer: bond-data-reviewer
+      db_operator: bond-db-operator
+      maintenance_owner: bond-maintenance-owner
+      rollback_owner: bond-rollback-owner
+    vacuum_decision_default: defer_to_followup_window
+  path: ../backend/data/bond_funds.db
+  wal_mode: true
+docker:
+  containers:
+    scheduler: bond-fund-tracker
+    tiantian_api: bond-fund-tracker
+    web: bond-fund-tracker
+logging:
+  files:
+    api: logs/api_{date}.log
+    error: logs/error_{date}.log
+    main: logs/collector_{date}.log
+  format: '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+  level: INFO
+  retention_days: 30
+risk_metrics:
+  min_data_points: 30
+  periods:
+  - 1y
+  - 3y
+  - 5y
+  mar: 0.0
+  risk_free_rate: 0.015
+  trading_days_per_year: 252
+scheduler:
+  cleanup:
+    database_backups:
+      keep_latest_manual_snapshot_per_family: 1
+      scheduled_keep_count: 6
+      unmanaged_retention_days: 14
+    screening_history:
+      apply: false
+      delete_runs: false
+      keep_latest_success_per_period: true
+      retention_days: 30
+    screening_outputs:
+      keep_latest_per_family: true
+      retention_days: 14
+  enabled: false
+  retry:
+    initial_delay: 60
+    max_attempts: 4
+    max_delay: 240
+  schedules:
+    daily_autostock_verify:
+    - 7
+    - 0
+    daily_fund_list_check:
+    - 5
+    - 30
+    daily_nav_update: 6,0
+    daily_policy_monitor:
+    - 11
+    - 30
+    - mon-fri
+    daily_risk_update:
+    - 9
+    - 30
+    daily_screening_workflow:
+    - 10
+    - 0
+    - mon-fri
+    daily_supplement_missing_nav:
+    - 7
+    - 30
+    monthly_backup:
+    - 1
+    - 0
+    - 1
+    monthly_cleanup:
+    - 2
+    - 0
+    - 1
+    monthly_supplement_estab:
+    - 3
+    - 0
+    - 1
+    weekly_company_update:
+    - 4
+    - 0
+    - 0
+    weekly_detail_update:
+    - 2
+    - 0
+    - 0
+    weekly_full_verify:
+    - 6
+    - 0
+    - 0
+    weekly_high_speed_detail:
+    - 5
+    - 0
+    - 0
+    weekly_holding_period_update:
+    - 2
+    - 30
+    - 0
+    weekly_manager_update:
+    - 3
+    - 0
+    - 0
+  tasks:
+    daily_autostock_verify: true
+    daily_fund_list_check: true
+    daily_nav_update: true
+    daily_policy_monitor: true
+    daily_risk_update: true
+    daily_screening_workflow: true
+    daily_supplement_missing_nav: true
+    monthly_backup: true
+    monthly_cleanup: true
+    monthly_supplement_estab: true
+    weekly_company_update: false
+    weekly_detail_update: false
+    weekly_full_verify: true
+    weekly_high_speed_detail: true
+    weekly_holding_period_update: true
+    weekly_manager_update: true
+  timeouts:
+    daily_autostock_verify: 600
+    daily_fund_list_check: 600
+    daily_nav: 7200
+    daily_nav_update: 7200
+    daily_policy_monitor: 1800
+    daily_risk: 300
+    daily_risk_update: 300
+    daily_screening_workflow: 3600
+    daily_supplement_missing_nav: 900
+    monthly_backup: 1800
+    monthly_cleanup: 1800
+    monthly_supplement_estab: 300
+    weekly_companies: 600
+    weekly_company_update: 600
+    weekly_detail_update: 10800
+    weekly_details: 10800
+    weekly_full_verify: 4500
+    weekly_high_speed_detail: 600
+    weekly_holding_period: 3600
+    weekly_holding_period_update: 3600
+    weekly_manager_update: 1800
+    weekly_managers: 1800
+  timezone: Asia/Shanghai
+  workers:
+    daily_risk_update: 10
+    weekly_company_update: 1
+    weekly_detail_update: 10
+    weekly_high_speed_detail: 25
+    weekly_holding_period: 20
+    weekly_holding_period_update: 20
+    weekly_manager_update: 5
+services:
+  tiantian_api_url: http://tiantian-api:3000
+  web_url: http://localhost:5000
+validation:
+  accuracy_threshold: 90
+  completeness_threshold: 99
+web:
+  cors:
+    origins:
+    - http://localhost:5000
+    - http://localhost:5173
+    - http://127.0.0.1:5000
+    - http://127.0.0.1:5173
+  debug: false
+  host: 0.0.0.0
+  port: 5000
+  secret_key: ''

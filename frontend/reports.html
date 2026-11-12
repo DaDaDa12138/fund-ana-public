@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>结果文件 - Fund-ANA</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/styles.css?v=1.9.783" />
+  </head>
+  <body class="layout-wide">
+    <div class="dashboard-app">
+      <header class="site-header">
+        <div class="site-shell">
+          <a class="site-brand" href="/">
+            <span class="site-brand-mark">FA</span>
+            <span class="site-brand-copy">
+              <strong>Fund-ANA</strong>
+              <small>Bond Fund Screening</small>
+            </span>
+          </a>
+          <nav class="page-nav page-nav-top">
+            <a href="/">总览</a>
+            <a href="/recommendations">推荐</a>
+            <a href="/favorites">收藏</a>
+            <a href="/tracker">跟踪</a>
+            <a href="/reports" class="active" aria-current="page">文件</a>
+            <a href="/task-summary">任务</a>
+            <a href="/operations">运行</a>
+            <a href="/api-settings">接口设置</a>
+          </nav>
+        </div>
+      </header>
+
+      <section class="page-hero">
+        <div class="page-hero-shell">
+          <div class="page-hero-main">
+            <div class="eyebrow">Published Files</div>
+            <h1>结果文件</h1>
+            <p>主发布版本与文件</p>
+            <div class="page-hero-actions">
+              <a class="preview-link" href="#primaryFilesCard">核心文件</a>
+              <a class="preview-link" href="#publicationHistoryCard">版本</a>
+            </div>
+          </div>
+          <aside class="page-hero-side">
+            <div class="hero-badge-stack">
+              <div id="reportsHeaderRunBadge" class="status-badge">
+                <span class="status-dot"></span>
+                <span>状态检测中…</span>
+              </div>
+              <div id="reportsHeaderHealthBadge" class="version-badge">数据源检测中…</div>
+            </div>
+            <details class="compact-disclosure hero-details"><summary>发布详情</summary><div id="reportsHeroMeta" class="hero-meta-card"></div></details>
+          </aside>
+        </div>
+      </section>
+
+      <main class="dashboard-main">
+        <section class="card card-emphasis">
+          <div class="card-title-row">
+            <div>
+              <div class="card-title">当前主发布版本</div>
+              <div id="reportsMeta" class="card-subtitle">正在加载…</div>
+            </div>
+          </div>
+          <div id="reportsStats" class="stats-grid compact"></div>
+          <details class="compact-disclosure summary-context-details">
+            <summary>发布与筛选详情</summary>
+            <div id="reportsFunnelNarrative" class="info-banner"></div>
+            <div id="reportsSummaryHints" class="active-filter-list recommendation-list-hints"></div>
+          </details>
+        </section>
+
+        <section class="card page-section-anchor page-list-surface" id="primaryFilesCard">
+          <div class="card-title-row">
+            <div>
+              <div class="card-title">核心文件入口</div>
+              <div class="card-subtitle">正式主榜 / 跟踪 / 报告</div>
+            </div>
+          </div>
+          <div id="primaryFiles" class="link-card-grid"></div>
+        </section>
+
+        <details class="compact-disclosure card-disclosure">
+          <summary>本期筛选差异</summary>
+          <div id="reportsReasonStats" class="stats-grid compact"></div>
+          <div id="reportsReasonNarrative" class="info-banner"></div>
+          <div id="reportsReasonHints" class="active-filter-list recommendation-list-hints"></div>
+        </details>
+
+        <section class="card page-section-anchor page-list-surface" id="publicationHistoryCard">
+          <div class="card-title-row">
+            <div>
+              <div class="card-title">版本记录</div>
+              <div class="card-subtitle">按主发布版本</div>
+            </div>
+          </div>
+          <div class="list-summary-stack">
+            <div id="publicationSummaryBanner" class="info-banner"></div>
+            <div id="publicationFilterBar" class="recommendation-filter-bar"></div>
+            <div id="publicationListHints" class="active-filter-list recommendation-list-hints"></div>
+          </div>
+          <div id="publicationTable" class="table-shell"></div>
+        </section>
+      </main>
+    </div>
+    <script src="/shared.js?v=1.9.783"></script>
+    <script src="/version-widget.js?v=1.9.783"></script>
+    <script src="/reports.js?v=1.9.783"></script>
+  </body>
+</html>

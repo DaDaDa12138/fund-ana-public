@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>接口设置 - Fund-ANA</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/styles.css?v=1.9.783" />
+  </head>
+  <body>
+    <div class="dashboard-app">
+      <header class="site-header">
+        <div class="site-shell">
+          <a class="site-brand" href="/">
+            <span class="site-brand-mark">FA</span>
+            <span class="site-brand-copy">
+              <strong>Fund-ANA</strong>
+              <small>Bond Fund Screening</small>
+            </span>
+          </a>
+          <nav class="page-nav page-nav-top">
+            <a href="/">总览</a>
+            <a href="/recommendations">推荐</a>
+            <a href="/favorites">收藏</a>
+            <a href="/tracker">跟踪</a>
+            <a href="/reports">文件</a>
+            <a href="/task-summary">任务</a>
+            <a href="/operations">运行</a>
+            <a href="/api-settings" class="active" aria-current="page">接口设置</a>
+          </nav>
+        </div>
+      </header>
+
+      <section class="page-hero">
+        <div class="page-hero-shell">
+          <div class="page-hero-main">
+            <div class="eyebrow">API Settings</div>
+            <h1>接口设置</h1>
+            <p>数据源地址</p>
+            <div class="page-hero-actions">
+              <a class="preview-link" href="#apiSettingsForm">配置</a>
+              <a class="preview-link" href="#apiProbeCard">测试</a>
+            </div>
+          </div>
+          <aside class="page-hero-side">
+            <div class="hero-badge-stack">
+              <div id="settingsHeaderRunBadge" class="status-badge">
+                <span class="status-dot"></span>
+                <span>状态检测中…</span>
+              </div>
+              <div id="settingsHeaderHealthBadge" class="version-badge">数据源检测中…</div>
+            </div>
+            <details class="compact-disclosure hero-details"><summary>发布详情</summary><div id="settingsHeroMeta" class="hero-meta-card"></div></details>
+          </aside>
+        </div>
+      </section>
+
+      <main class="dashboard-main">
+        <section class="card card-emphasis">
+          <div class="card-title-row">
+            <div>
+              <div class="card-title">当前接口</div>
+              <div id="settingsMeta" class="card-subtitle">正在读取…</div>
+            </div>
+            <button id="reloadSettingsBtn" type="button" class="secondary">刷新</button>
+          </div>
+          <div id="settingsStats" class="stats-grid compact"></div>
+          <div id="settingsBanner" class="info-banner" role="status" aria-live="polite">
+            <strong>状态</strong>
+            <span>正在加载</span>
+          </div>
+        </section>
+
+        <section class="content-grid two-col">
+          <section class="card" id="apiSettingsForm">
+            <div class="card-title-row">
+              <div>
+                <div class="card-title">地址配置</div>
+                <div class="card-subtitle">保存到 config/project.yaml</div>
+              </div>
+            </div>
+            <form class="api-settings-form">
+              <label class="api-settings-field">
+                <span>Tiantian API</span>
+                <input id="tiantianBaseUrlInput" type="url" autocomplete="off" spellcheck="false" placeholder="http://108.62.161.95:18087" />
+              </label>
+              <label class="api-settings-field">
+                <span>AutoStock API</span>
+                <input id="autostockBaseUrlInput" type="url" autocomplete="off" spellcheck="false" placeholder="https://api.autostock.cn/v1" />
+              </label>
+              <div class="api-settings-actions">
+                <button id="saveSettingsBtn" type="button">保存</button>
+                <button id="saveAndProbeSettingsBtn" type="button">保存并测试</button>
+                <button id="resetSettingsBtn" type="button" class="secondary">还原</button>
+              </div>
+            </form>
+          </section>
+
+          <section class="card" id="apiProbeCard">
+            <div class="card-title-row">
+              <div>
+                <div class="card-title">连接测试</div>
+                <div class="card-subtitle">Tiantian 业务探针</div>
+              </div>
+              <button id="probeTiantianBtn" type="button" class="secondary">测试</button>
+            </div>
+            <div id="probeResult" class="api-probe-result empty-state-inline">暂无测试结果</div>
+          </section>
+        </section>
+      </main>
+    </div>
+
+    <script src="/shared.js?v=1.9.783"></script>
+    <script src="/scheduler-shared.js?v=1.9.783"></script>
+    <script src="/version-widget.js?v=1.9.783"></script>
+    <script src="/settings.js?v=1.9.783"></script>
+  </body>
+</html>

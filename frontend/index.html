@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>最终高质量债基跟踪 - Fund-ANA</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/styles.css?v=1.9.783" />
+  </head>
+  <body class="home-overview">
+    <div class="dashboard-app">
+      <header class="site-header">
+        <div class="site-shell">
+          <a class="site-brand" href="/">
+            <span class="site-brand-mark">FA</span>
+            <span class="site-brand-copy">
+              <strong>Fund-ANA</strong>
+              <small>Bond Fund Screening</small>
+            </span>
+          </a>
+          <nav class="page-nav page-nav-top">
+            <a href="/" class="active" aria-current="page">总览</a>
+            <a href="/recommendations">推荐</a>
+            <a href="/favorites">收藏</a>
+            <a href="/tracker">跟踪</a>
+            <a href="/reports">文件</a>
+            <a href="/task-summary">任务</a>
+            <a href="/operations">运行</a>
+            <a href="/api-settings">接口设置</a>
+          </nav>
+        </div>
+      </header>
+
+      <section class="page-hero">
+        <div class="page-hero-shell">
+          <div class="page-hero-main">
+            <div class="eyebrow">Bond Fund Overview</div>
+            <h1>债基总览</h1>
+            <p>正式发布与数据新鲜度</p>
+            <div class="page-hero-actions">
+              <a class="preview-link" href="/recommendations">推荐</a>
+              <a class="preview-link" href="/tracker">跟踪</a>
+            </div>
+          </div>
+          <aside class="page-hero-side">
+            <div class="hero-badge-stack">
+              <div id="headerRunBadge" class="status-badge">
+                <span class="status-dot"></span>
+                <span>状态检测中…</span>
+              </div>
+              <div id="headerHealthBadge" class="version-badge">数据源检测中…</div>
+            </div>
+            <details class="compact-disclosure hero-details"><summary>发布详情</summary><div id="heroMeta" class="hero-meta-card"></div></details>
+          </aside>
+        </div>
+      </section>
+
+      <main class="dashboard-main">
+        <section class="card card-emphasis">
+          <div class="card-title-row">
+            <div>
+              <div class="card-title">首页快照</div>
+              <div class="card-subtitle">正式榜与数据状态</div>
+            </div>
+          </div>
+          <div id="overviewStats" class="stats-grid stats-grid-home"></div>
+          <div id="snapshotStatusBanner" class="snapshot-status-banner"></div>
+          <details class="compact-disclosure summary-context-details">
+            <summary>数据与名单变化</summary>
+          <div class="subsection-shell">
+            <div class="subsection-header">
+              <div>
+                <div class="subsection-title">数据完整性诊断</div>
+              <div class="subsection-subtitle">日期与覆盖</div>
+              </div>
+              <button id="overviewIntegrityToggleBtn" type="button" class="secondary subsection-toggle">展开完整性诊断</button>
+            </div>
+            <div id="integrityStats" class="stats-grid stats-grid-home subsection-body is-collapsed"></div>
+          </div>
+          <div class="subsection-shell">
+            <div class="subsection-header">
+              <div>
+                <div class="subsection-title">数据库与覆盖细项</div>
+              <div class="subsection-subtitle">覆盖与调度</div>
+              </div>
+              <button id="overviewDatabaseToggleBtn" type="button" class="secondary subsection-toggle">展开数据库细项</button>
+            </div>
+            <div id="databaseDetailStats" class="stats-grid stats-grid-home subsection-body is-collapsed"></div>
+          </div>
+          <div id="trackerNarrative" class="info-banner"></div>
+          <div id="overviewSummaryHints" class="active-filter-list recommendation-list-hints"></div>
+          </details>
+        </section>
+
+        <details class="home-diagnostics-shell">
+          <summary>
+            <span>诊断</span>
+            <small>异常时展开</small>
+          </summary>
+        <section class="content-grid two-col home-diagnostics-content">
+          <section class="card">
+            <div class="card-title-row">
+              <div>
+                <div class="card-title">API 接口</div>
+                <div class="card-subtitle">当前配置与运行口径</div>
+              </div>
+              <div class="api-overview-actions">
+                <button id="refreshApiSettingsOverviewBtn" type="button" class="secondary">刷新</button>
+                <a class="preview-link" href="/api-settings">配置接口</a>
+              </div>
+            </div>
+            <div id="apiSettingsOverviewStats" class="stats-grid compact"></div>
+            <div id="apiSettingsOverviewBanner" class="info-banner"></div>
+          </section>
+
+          <section class="card">
+            <div class="card-title-row">
+              <div>
+                <div class="card-title">调度状态</div>
+                <div class="card-subtitle">调度与快照</div>
+              </div>
+            </div>
+            <div id="schedulerOverviewStats" class="stats-grid compact"></div>
+            <div class="subsection-shell">
+              <div class="subsection-header">
+                <div>
+                  <div class="subsection-title">调度细项</div>
+                  <div class="subsection-subtitle">触发结果、维护写入与快照对齐</div>
+                </div>
+                <button id="overviewSchedulerToggleBtn" type="button" class="secondary subsection-toggle">收起调度细项</button>
+              </div>
+              <div id="schedulerTaskStats" class="stats-grid compact subsection-body"></div>
+            </div>
+            <div id="schedulerOverviewNarrative" class="info-banner"></div>
+            <div id="schedulerSummaryHints" class="active-filter-list recommendation-list-hints"></div>
+          </section>
+
+          <section class="card">
+            <div class="card-title-row">
+              <div>
+                <div class="card-title">快速判断</div>
+                <div class="card-subtitle">快速入口</div>
+              </div>
+            </div>
+            <ul id="gateRuleList" class="bullet-list"></ul>
+            <div id="ruleCardList" class="rule-card-grid"></div>
+          </section>
+        </section>
+
+        <section class="card">
+          <div class="card-title-row">
+            <div>
+              <div class="card-title">自动化闭环</div>
+              <div class="card-subtitle">最近闭环</div>
+            </div>
+          </div>
+          <div id="schedulerClosureStats" class="stats-grid compact"></div>
+          <div id="schedulerClosureCards" class="automation-closure-grid"></div>
+          <div id="schedulerClosureNarrative" class="info-banner"></div>
+          <div id="schedulerSmokeStats" class="stats-grid compact"></div>
+          <div id="schedulerSmokeNarrative" class="info-banner"></div>
+          <div id="closureSummaryHints" class="active-filter-list recommendation-list-hints"></div>
+        </section>
+        </details>
+
+        <section class="card">
+          <div class="card-title-row">
+            <div>
+              <div class="card-title">核心文件入口</div>
+              <div class="card-subtitle">正式产物</div>
+            </div>
+          </div>
+          <div id="latestFileLinks" class="link-card-grid"></div>
+          <details class="compact-disclosure summary-context-details">
+            <summary>文件来源与发布状态</summary>
+            <div id="publicationNarrative" class="info-banner"></div>
+            <div id="publicationSummaryHints" class="active-filter-list recommendation-list-hints"></div>
+          </details>
+        </section>
+      </main>
+    </div>
+
+    <script src="/shared.js?v=1.9.783"></script>
+    <script src="/scheduler-shared.js?v=1.9.783"></script>
+    <script src="/version-widget.js?v=1.9.783"></script>
+    <script src="/app.js?v=1.9.783"></script>
+  </body>
+</html>

@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>优质基金推荐 - Fund-ANA</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/styles.css?v=1.9.783" />
+  </head>
+  <body class="layout-wide page-recommendations">
+    <div class="dashboard-app">
+      <header class="site-header">
+        <div class="site-shell">
+          <a class="site-brand" href="/">
+            <span class="site-brand-mark">FA</span>
+            <span class="site-brand-copy">
+              <strong>Fund-ANA</strong>
+              <small>Bond Fund Screening</small>
+            </span>
+          </a>
+          <nav class="page-nav page-nav-top">
+            <a href="/">总览</a>
+            <a href="/recommendations" class="active" aria-current="page">推荐</a>
+            <a href="/favorites">收藏</a>
+            <a href="/tracker">跟踪</a>
+            <a href="/reports">文件</a>
+            <a href="/task-summary">任务</a>
+            <a href="/operations">运行</a>
+            <a href="/api-settings">接口设置</a>
+          </nav>
+        </div>
+      </header>
+
+      <section class="page-hero">
+        <div class="page-hero-shell">
+          <div class="page-hero-main">
+            <div class="eyebrow">Priority Pool</div>
+            <h1>优质推荐</h1>
+            <p>优先池名单</p>
+            <div class="page-hero-actions">
+              <a class="preview-link" href="#recommendationGroupsCard">查看分组</a>
+              <a class="preview-link" href="/tracker">查看跟踪</a>
+              <a id="recommendationDownloadBtn" class="download-link" href="#" target="_blank" rel="noreferrer">下载主榜</a>
+            </div>
+          </div>
+          <aside class="page-hero-side">
+            <div class="hero-badge-stack">
+              <div id="recommendationsHeaderRunBadge" class="status-badge">
+                <span class="status-dot"></span>
+                <span>状态检测中…</span>
+              </div>
+              <div id="recommendationsHeaderHealthBadge" class="version-badge">数据源检测中…</div>
+            </div>
+            <details class="compact-disclosure hero-details"><summary>发布详情</summary><div id="recommendationsHeroMeta" class="hero-meta-card"></div></details>
+          </aside>
+        </div>
+      </section>
+
+      <main class="dashboard-main">
+        <section class="card card-emphasis">
+          <div class="card-title-row">
+            <div>
+              <div class="card-title">推荐摘要</div>
+              <div id="recommendationsMeta" class="card-subtitle">正在加载…</div>
+            </div>
+            <div class="recommendation-toolbar-actions">
+              <button id="recommendationValuationBtn" type="button" class="secondary">补估值</button>
+              <button id="recommendationExportBtn" type="button" class="secondary">导出列表</button>
+            </div>
+          </div>
+          <div id="recommendationsStats" class="stats-grid compact"></div>
+          <details class="compact-disclosure summary-context-details">
+            <summary>来源与筛选口径</summary>
+            <div id="recommendationsNarrative" class="info-banner"></div>
+            <div id="recommendationsSignals" class="subtle-panel"></div>
+          </details>
+          <div id="recommendationValuationBanner" class="info-banner recommendation-valuation-banner">
+            <strong>实时估值</strong>
+            <span>点击后补估值</span>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="card-title-row">
+            <div>
+              <div class="card-title">推荐分组概览</div>
+              <div class="card-subtitle">结构 / 风格覆盖</div>
+            </div>
+            <div id="recommendationGroupSwitch" class="segmented-switch" aria-label="推荐分组切换"></div>
+          </div>
+          <div id="recommendationGroupStats" class="stats-grid compact"></div>
+          <div id="recommendationGroupNarrative" class="recommendation-group-brief"></div>
+        </section>
+
+        <section class="card page-section-anchor page-list-surface" id="recommendationGroupsCard">
+          <div class="card-title-row">
+            <div>
+              <div class="card-title">推荐基金列表</div>
+              <div class="card-subtitle">筛选 / 风格 / 评分</div>
+            </div>
+            <div class="recommendation-list-toolbar">
+              <div id="recommendationSortPresetSwitch" class="segmented-switch" aria-label="推荐排序预设"></div>
+              <div class="score-tooltip recommendation-metric-tooltip" tabindex="0">
+                <button type="button" class="score-tooltip-trigger" aria-controls="globalFloatingTooltip" aria-expanded="false">指标说明</button>
+                <div id="recommendationMetricTooltipCard" class="score-tooltip-card" role="tooltip">
+                  <p><strong>正式投资评分</strong>：综合排序参考，具体权重以当前后端评分契约为准。</p>
+                  <p><strong>收益与风险</strong>：仅展示有真实历史覆盖且可追溯的后端指标；缺失值保持为空。</p>
+                  <p><strong>建议权重</strong>：推荐展示池内的相对参考，不是投资指令。</p>
+                  <div id="recommendationFormalScoreContract">
+                    <p>评分契约将在数据加载后显示。</p>
+                  </div>
+                  <div class="score-tooltip-tags">
+                    <span>稳健优先：低回撤、低波动、高夏普</span>
+                    <span>长期复利：长期年化 + 长期稳定性</span>
+                    <span>收益弹性：近1年收益效率优先</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="list-summary-stack">
+            <div id="recommendationFilterBar" class="recommendation-filter-bar"></div>
+            <div id="recommendationViewBar" class="favorite-view-bar"></div>
+            <details class="compact-disclosure list-context-details">
+              <summary>当前口径与列表提示</summary>
+              <div id="recommendationStyleThresholdSummary" class="favorite-threshold-overview"></div>
+              <div id="recommendationListHints" class="active-filter-list recommendation-list-hints"></div>
+            </details>
+          </div>
+          <div class="recommendation-mobile-section-shell">
+            <button id="recommendationChangeToggleBtn" type="button" class="secondary recommendation-mobile-section-toggle">名单变化</button>
+            <div id="recommendationChangePanel" class="recommendation-change-panel"></div>
+          </div>
+          <div class="recommendation-mobile-section-shell">
+            <button id="recommendationCompareToggleBtn" type="button" class="secondary recommendation-mobile-section-toggle">对比面板</button>
+            <div id="recommendationComparePanel" class="recommendation-compare-panel"></div>
+          </div>
+          <div id="recommendationActionBanner" class="info-banner recommendation-action-banner">
+            <strong>操作建议</strong>
+            <span>可直接加入收藏</span>
+          </div>
+          <div id="recommendationCards" class="recommendation-list-shell"></div>
+        </section>
+      </main>
+    </div>
+
+    <script src="/shared.js?v=1.9.783"></script>
+    <script src="/version-widget.js?v=1.9.783"></script>
+    <script src="/recommendations.js?v=1.9.783"></script>
+  </body>
+</html>

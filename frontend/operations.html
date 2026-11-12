@@ -1,0 +1,319 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>运行中心 - Fund-ANA</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/styles.css?v=1.9.783" />
+  </head>
+  <body class="layout-wide page-operations">
+    <div class="dashboard-app">
+      <header class="site-header">
+        <div class="site-shell">
+          <a class="site-brand" href="/">
+            <span class="site-brand-mark">FA</span>
+            <span class="site-brand-copy">
+              <strong>Fund-ANA</strong>
+              <small>Bond Fund Screening</small>
+            </span>
+          </a>
+          <nav class="page-nav page-nav-top">
+            <a href="/">总览</a>
+            <a href="/recommendations">推荐</a>
+            <a href="/favorites">收藏</a>
+            <a href="/tracker">跟踪</a>
+            <a href="/reports">文件</a>
+            <a href="/task-summary">任务</a>
+            <a href="/operations" class="active" aria-current="page">运行</a>
+            <a href="/api-settings">接口设置</a>
+          </nav>
+        </div>
+      </header>
+
+      <section class="page-hero">
+        <div class="page-hero-shell">
+          <div class="page-hero-main">
+            <div class="eyebrow">Operations</div>
+            <h1>运行中心</h1>
+            <p>任务、调度、日志</p>
+            <div class="page-hero-actions">
+              <a class="preview-link" href="#runControls">执行</a>
+              <a class="preview-link" href="#workflowStatus">状态</a>
+            </div>
+          </div>
+          <aside class="page-hero-side">
+            <div class="hero-badge-stack">
+              <div id="operationsHeaderRunBadge" class="status-badge">
+                <span class="status-dot"></span>
+                <span>状态检测中…</span>
+              </div>
+              <div id="operationsHeaderHealthBadge" class="version-badge">数据源检测中…</div>
+            </div>
+            <details class="compact-disclosure hero-details"><summary>发布详情</summary><div id="operationsHeroMeta" class="hero-meta-card"></div></details>
+          </aside>
+        </div>
+      </section>
+
+      <main class="dashboard-main">
+        <section class="card operations-overview-card page-list-surface">
+          <div class="card-title-row">
+            <div>
+              <div class="card-title">运行概览</div>
+              <div class="card-subtitle">先看状态，再进入诊断</div>
+            </div>
+          </div>
+          <div class="operations-overview-shell">
+            <section class="operations-overview-group" aria-label="当前状态摘要">
+              <div class="operations-overview-title">当前状态摘要</div>
+              <div class="operations-overview-note">首屏只保留执行判断需要的即时状态。</div>
+              <div id="operationsRunSummary" class="active-filter-list recommendation-list-hints operations-run-summary"></div>
+            </section>
+            <details class="operations-overview-group operations-overview-disclosure">
+              <summary class="operations-overview-title">诊断导航</summary>
+              <div class="operations-overview-note">按需跳转到完整性、未入榜或治理诊断。</div>
+              <div id="operationsQuickNav" class="active-filter-list recommendation-list-hints operations-quick-nav"></div>
+            </details>
+          </div>
+        </section>
+
+        <section class="card control-card page-section-anchor" id="runControls">
+          <div class="card-title-row">
+            <div>
+              <div class="card-title">运行模式</div>
+              <div class="card-subtitle">自动 / 调试</div>
+            </div>
+            <div class="hero-actions">
+              <button id="startBtn" type="button">执行</button>
+              <button id="refreshBtn" type="button" class="secondary">刷新</button>
+            </div>
+          </div>
+          <div id="automationModeBanner" class="info-banner" role="status" aria-live="polite">
+            <strong>模式</strong>
+            <span>检测中</span>
+          </div>
+          <div id="runOptionGrid" class="option-grid">
+            <label class="option-card">
+              <input id="run_collection" type="checkbox" checked />
+              <div>
+                <strong>采集</strong>
+                <span>更新基础数据</span>
+              </div>
+            </label>
+            <label class="option-card">
+              <input id="run_screening" type="checkbox" checked />
+              <div>
+                <strong>筛选</strong>
+                <span>生成正式主榜</span>
+              </div>
+            </label>
+            <label class="option-card">
+              <input id="reuse_existing_outputs" type="checkbox" />
+              <div>
+                <strong>重建</strong>
+                <span>仅刷新发布层</span>
+              </div>
+            </label>
+          </div>
+          <div id="runActionFeedback" class="info-banner" role="status" aria-live="polite">
+            <strong>反馈</strong>
+            <span>暂无执行</span>
+          </div>
+        </section>
+
+        <details class="card operations-fold" id="manualRunSection">
+          <summary class="operations-fold-summary">
+            <span>调试补跑</span>
+            <small>仅排障时使用</small>
+          </summary>
+          <div class="operations-fold-body">
+            <div class="card-title-row operations-fold-actions">
+              <div class="card-subtitle">自动链异常时再发起补跑，不作为日常操作入口。</div>
+              <div class="hero-actions">
+                <button id="manualDailyBtn" type="button" class="secondary">补跑日更</button>
+                <button id="manualIntradayBtn" type="button" class="secondary">补跑盘中</button>
+                <button id="manualWeeklyBtn" type="button" class="secondary">补周维</button>
+              </div>
+            </div>
+            <div id="manualRunFeedback" class="info-banner">尚未发起补跑请求。</div>
+            <div class="operations-detail-header">
+              <button id="manualRunHistoryToggleBtn" type="button" class="secondary operations-detail-toggle" aria-expanded="false">展开补跑记录</button>
+            </div>
+            <div id="manualRunHistory" class="data-card-list operations-detail-list is-collapsed"></div>
+          </div>
+        </details>
+
+        <section class="content-grid two-col">
+          <section class="card page-section-anchor" id="workflowStatus">
+            <div class="card-title-row">
+              <div>
+                <div class="card-title">工作流状态</div>
+                <div class="card-subtitle">手动 / 自动</div>
+              </div>
+            </div>
+            <div class="status-summary-stack">
+              <div id="statusMeta" class="stats-grid compact"></div>
+              <div id="workflowNarrative" class="info-banner"></div>
+            </div>
+            <div class="subsection-shell">
+              <div class="subsection-header">
+                <div>
+                  <div class="subsection-title">运行日志</div>
+                  <div class="subsection-subtitle">原始任务日志流</div>
+                </div>
+                <button id="workflowLogsToggleBtn" type="button" class="secondary subsection-toggle" aria-expanded="false">展开运行日志</button>
+              </div>
+              <pre id="logs" class="console-panel compact-console subsection-body is-collapsed">尚未运行</pre>
+            </div>
+          </section>
+
+          <section class="card page-section-anchor" id="schedulerStatusCard">
+            <div class="card-title-row">
+              <div>
+                <div class="card-title">调度状态</div>
+                <div class="card-subtitle">日更状态</div>
+              </div>
+            </div>
+            <div class="status-summary-stack">
+              <div id="schedulerStats" class="stats-grid compact"></div>
+              <div id="schedulerNarrative" class="info-banner"></div>
+            </div>
+            <div class="subsection-shell">
+              <div class="subsection-header">
+                <div>
+                  <div class="subsection-title">调度扩展指标</div>
+                  <div class="subsection-subtitle">无动作分类、积压判定和补跑状态</div>
+                </div>
+                <button id="schedulerSecondaryToggleBtn" type="button" class="secondary subsection-toggle" aria-expanded="false">展开扩展指标</button>
+              </div>
+              <div id="schedulerSecondaryStats" class="stats-grid compact subsection-body is-collapsed"></div>
+            </div>
+          </section>
+        </section>
+
+        <details class="card page-section-anchor page-list-surface operations-fold" id="automationClosureSection">
+          <summary class="operations-fold-summary">
+            <span>自动化闭环详情</span>
+            <small>最近闭环与子任务证据</small>
+          </summary>
+          <div class="operations-fold-body">
+            <div id="automationClosureStats" class="stats-grid compact"></div>
+            <div id="automationClosureCards" class="automation-closure-grid"></div>
+            <div id="automationClosureNarrative" class="info-banner"></div>
+          </div>
+        </details>
+
+        <section class="content-grid two-col operations-analysis-grid">
+          <div class="operations-analysis-divider operations-analysis-divider-priority">
+            <strong>优先诊断区</strong>
+            <span>优先看会直接影响当前运行判断和榜单可信度的诊断结果。</span>
+          </div>
+
+          <details class="card page-section-anchor operations-priority-card operations-fold" id="integrityAuditSection">
+            <summary class="operations-fold-summary">
+              <span>完整性审计</span>
+              <small>优先 · 一致性检查</small>
+            </summary>
+            <div class="operations-fold-body">
+              <div id="integrityAuditStats" class="stats-grid compact"></div>
+              <div id="integrityAuditNarrative" class="info-banner"></div>
+            </div>
+          </details>
+
+          <details class="card page-section-anchor page-list-surface operations-priority-card operations-fold" id="exclusionSection">
+            <summary class="operations-fold-summary">
+              <span>未入榜诊断</span>
+              <small>优先 · 主因与样本</small>
+            </summary>
+            <div class="operations-fold-body">
+              <div id="exclusionStats" class="stats-grid compact"></div>
+              <div id="exclusionNarrative" class="info-banner"></div>
+              <div class="operations-detail-header">
+                <button id="exclusionSamplesToggleBtn" type="button" class="secondary operations-detail-toggle" aria-expanded="false">展开诊断样本</button>
+              </div>
+              <div id="exclusionSamples" class="data-card-list operations-detail-list is-collapsed"></div>
+            </div>
+          </details>
+
+          <details class="card page-section-anchor page-list-surface operations-priority-card operations-fold" id="regressionSmokeSection">
+            <summary class="operations-fold-summary">
+              <span>回归 Smoke 自检</span>
+              <small>优先 · 周维护后自检</small>
+            </summary>
+            <div class="operations-fold-body">
+              <div id="regressionSmokeStats" class="stats-grid compact"></div>
+              <div id="regressionSmokeNarrative" class="info-banner"></div>
+              <div class="operations-detail-header">
+                <button id="regressionSmokeArtifactsToggleBtn" type="button" class="secondary operations-detail-toggle" aria-expanded="false">展开 Smoke 产物</button>
+              </div>
+              <div id="regressionSmokeArtifacts" class="data-card-list operations-detail-list is-collapsed"></div>
+            </div>
+          </details>
+
+          <details class="card page-section-anchor operations-support-card operations-fold" id="automationLayerSection">
+            <summary class="operations-fold-summary">
+              <span>自动化分层</span>
+              <small>辅助 · 版本分层</small>
+            </summary>
+            <div class="operations-fold-body">
+              <div id="automationLayerStats" class="stats-grid compact"></div>
+              <div id="automationLayerNarrative" class="info-banner"></div>
+            </div>
+          </details>
+
+          <details class="operations-governance-fold">
+            <summary class="operations-fold-summary operations-governance-summary">
+              <span>治理与观察</span>
+              <small>长期历史、上游与策略稳定性</small>
+            </summary>
+            <div class="content-grid two-col operations-governance-grid">
+              <section class="card page-section-anchor page-list-surface operations-secondary-card" id="longTermGovernanceSection">
+                <div class="card-title-row">
+                  <div>
+                    <div class="card-title">长周期治理</div>
+                    <div class="card-subtitle">历史覆盖与上游受限</div>
+                  </div>
+                  <div class="operations-card-marker operations-card-marker-secondary">治理观察</div>
+                </div>
+                <div id="longTermGovernanceStats" class="operations-stat-sections"></div>
+                <div id="longTermGovernanceNarrative" class="info-banner"></div>
+                <div id="longTermGovernanceQueue" class="operations-governance-queue"></div>
+                <div class="operations-detail-header">
+                  <button id="longTermGovernanceSamplesToggleBtn" type="button" class="secondary operations-detail-toggle" aria-expanded="false">展开治理样本</button>
+                </div>
+                <div id="longTermGovernanceSamples" class="data-card-list operations-detail-list is-collapsed"></div>
+              </section>
+
+              <section class="card page-section-anchor page-list-surface operations-secondary-card" id="lowVolPositiveRatioSection">
+                <div class="card-title-row">
+                  <div>
+                    <div class="card-title">低波观察</div>
+                    <div class="card-subtitle">正收益口径差</div>
+                  </div>
+                  <div class="operations-card-marker operations-card-marker-secondary">治理观察</div>
+                </div>
+                <div id="lowVolPositiveRatioStats" class="stats-grid compact"></div>
+                <div id="lowVolPositiveRatioNarrative" class="info-banner"></div>
+                <div class="operations-detail-header">
+                  <button id="lowVolPositiveRatioSamplesToggleBtn" type="button" class="secondary operations-detail-toggle" aria-expanded="false">展开观察样本</button>
+                </div>
+                <div id="lowVolPositiveRatioSamples" class="data-card-list operations-detail-list is-collapsed"></div>
+              </section>
+            </div>
+          </details>
+        </section>
+      </main>
+    </div>
+    <script src="/shared.js?v=1.9.783"></script>
+    <script src="/scheduler-shared.js?v=1.9.783"></script>
+    <script src="/version-widget.js?v=1.9.783"></script>
+    <script src="/operations-scheduler-detail.js?v=1.9.783"></script>
+    <script src="/operations-regression-smoke.js?v=1.9.783"></script>
+    <script src="/operations-workflow-status.js?v=1.9.783"></script>
+    <script src="/operations-scheduler-status.js?v=1.9.783"></script>
+    <script src="/operations-automation-layers.js?v=1.9.783"></script>
+    <script src="/operations-governance-summary.js?v=1.9.783"></script>
+    <script src="/operations-dashboard-watch.js?v=1.9.783"></script>
+    <script src="/operations.js?v=1.9.783"></script>
+  </body>
+</html>

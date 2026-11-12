@@ -1,0 +1,46 @@
+name: Cloud Runner Readiness
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+env:
+  TZ: Asia/Shanghai
+jobs:
+  readiness:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Check ephemeral disk and public upstream connectivity
+        run: |
+          df -h / /mnt
+          docker image prune -af
+          docker builder prune -af
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache /usr/share/swift /usr/local/share/powershell /usr/local/share/chromium /opt/microsoft /usr/local/lib/node_modules /usr/local/share/boost /usr/lib/jvm /usr/local/julia* /usr/share/miniconda /opt/az /usr/local/aws-cli /usr/share/gradle* /usr/share/maven
+          df -h / /mnt
+          docker build -t fund-ana-tiantian:cloud deploy/tiantian-api
+          docker run -d --name tiantian-api -e TZ=Asia/Shanghai -p 3000:3000 fund-ana-tiantian:cloud
+          sleep 5
+          python3 - <<'PY'
+          import json,urllib.request,urllib.parse
+          requests=[
+            ('http://127.0.0.1:3000/healthz',None),
+            ('http://127.0.0.1:3000/fundMNHisNetList?FCODE=100066&pageIndex=1&pageSize=3',None),
+            ('https://fundcomapi.eastmoney.com/mm/newCore/FundValuationLast',{'FCODES':'100066','FIELDS':'FCODE,NAV,PDATE,SYL_1N'}),
+            ('https://fundmobapi.eastmoney.com/FundMNewApi/FundMNFInfo?Fcodes=100066&plat=Android&deviceid=fund-ana&product=EFund&Version=6.6.8&appType=ttjj&pageIndex=1&pageSize=1',None),
+          ]
+          errors=[]
+          for url,data in requests:
+            try:
+              req=urllib.request.Request(url,data=urllib.parse.urlencode(data).encode() if data else None,headers={'User-Agent':'Mozilla/5.0','Content-Type':'application/x-www-form-urlencoded','Referer':'https://h5.1234567.com.cn/'})
+              with urllib.request.urlopen(req,timeout=45) as r:
+                body=r.read();value=json.loads(body)
+                rows=value.get('Datas') or value.get('data')
+                print(urllib.parse.urlparse(url).netloc,r.status,len(body),'rows',len(rows) if isinstance(rows,list) else None)
+                if 'healthz' not in url and not rows:
+                  print('Upstream returned no business records.');errors.append(url)
+            except Exception as e:print(type(e).__name__,str(e));errors.append(url)
+          if errors:raise RuntimeError('upstream_business_preflight_failed')
+          PY

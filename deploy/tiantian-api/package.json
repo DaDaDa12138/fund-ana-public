@@ -1,0 +1,15 @@
+{
+  "name": "fund-ana-tiantian-api",
+  "version": "1.9.745",
+  "private": true,
+  "description": "Project-owned deployment of the pinned TiantianFundApi fund adapters",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test tests/*.test.js"
+  },
+  "engines": { "node": ">=22" },
+  "dependencies": {
+    "axios": "1.20.0",
+    "glob": "13.0.6"
+  }
+}

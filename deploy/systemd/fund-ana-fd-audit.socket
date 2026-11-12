@@ -1,0 +1,12 @@
+[Unit]
+Description=Fund ANA host file descriptor audit socket
+
+[Socket]
+ListenStream=/mnt/Project/Fund-ANA/backend/data/storage_fd_audit.sock
+SocketMode=0600
+SocketUser=root
+SocketGroup=root
+RemoveOnStop=true
+
+[Install]
+WantedBy=sockets.target

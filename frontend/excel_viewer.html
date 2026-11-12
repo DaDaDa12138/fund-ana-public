@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Excel 预览 - Fund-ANA</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/styles.css?v=1.9.783" />
+  </head>
+  <body class="viewer-body">
+    <div class="dashboard-app">
+      <header class="site-header">
+        <div class="site-shell">
+          <a class="site-brand" href="/">
+            <span class="site-brand-mark">FA</span>
+            <span class="site-brand-copy">
+              <strong>Fund-ANA</strong>
+              <small>Bond Fund Screening</small>
+            </span>
+          </a>
+          <nav class="page-nav page-nav-top">
+            <a href="/">总览</a>
+            <a href="/recommendations">推荐</a>
+            <a href="/favorites">收藏</a>
+            <a href="/tracker">跟踪</a>
+            <a href="/reports" class="active" aria-current="page">文件</a>
+            <a href="/task-summary">任务</a>
+            <a href="/operations">运行</a>
+            <a href="/api-settings">接口设置</a>
+          </nav>
+        </div>
+      </header>
+
+      <section class="page-hero">
+        <div class="page-hero-shell">
+          <div class="page-hero-main">
+            <div class="eyebrow">Excel Viewer</div>
+            <h1 id="viewerTitle">Excel 预览</h1>
+            <p id="viewerPath" class="viewer-path viewer-path-hero">正在加载文件信息…</p>
+            <div class="page-hero-actions">
+              <a href="/reports" class="preview-link">返回</a>
+              <a id="viewerOpenBtn" class="preview-link" href="#" target="_blank" rel="noreferrer">原文件</a>
+              <a id="viewerDownloadBtn" class="download-link" href="#" target="_blank" rel="noreferrer">下载</a>
+            </div>
+          </div>
+          <aside class="page-hero-side">
+            <div class="subtle-panel">
+              <strong>功能</strong>
+              <span>搜索 / 排序 / 冻结</span>
+            </div>
+            <details class="compact-disclosure hero-details"><summary>发布详情</summary><div id="viewerHeroMeta" class="hero-meta-card"></div></details>
+          </aside>
+        </div>
+      </section>
+
+      <main class="viewer-layout">
+        <section class="card viewer-summary-card">
+        <div id="viewerSummary" class="viewer-summary-grid">
+          <div><strong>文件名</strong><span>-</span></div>
+          <div><strong>工作表数</strong><span>-</span></div>
+          <div><strong>当前工作表</strong><span>-</span></div>
+          <div><strong>总行数</strong><span>-</span></div>
+          <div><strong>筛选后行数</strong><span>-</span></div>
+          <div><strong>当前列数</strong><span>-</span></div>
+          <div><strong>排序状态</strong><span>-</span></div>
+        </div>
+        </section>
+
+        <section class="card viewer-toolbar-card">
+        <div class="viewer-toolbar">
+          <label class="viewer-search">
+            <span>表内搜索</span>
+            <input id="viewerSearchInput" type="search" placeholder="输入关键字…" />
+          </label>
+          <div class="viewer-toolbar-actions">
+            <button id="viewerClearBtn" type="button" class="secondary">清空搜索</button>
+            <button id="viewerToolbarToggleBtn" type="button" class="secondary subsection-toggle viewer-mobile-toggle">展开更多操作</button>
+          </div>
+          <div id="viewerStatus" class="viewer-status">正在加载 Excel…</div>
+        </div>
+        <div id="viewerAdvancedToolbar" class="subsection-body">
+          <div class="viewer-toolbar viewer-toolbar-secondary">
+            <label class="viewer-search">
+              <span>显示列模式</span>
+              <select id="viewerColumnModeSelect">
+                <option value="auto">自动紧凑</option>
+                <option value="all">全部列</option>
+                <option value="basic">基础信息</option>
+                <option value="returns">收益评分</option>
+                <option value="validation">校验份额</option>
+              </select>
+            </label>
+            <div class="viewer-toolbar-actions">
+              <button id="viewerWrapBtn" type="button" class="secondary">换行</button>
+              <button id="viewerFreezeBtn" type="button" class="secondary">冻2列</button>
+            </div>
+          </div>
+        </div>
+        <p class="viewer-tip">搜索 / 切换 / 排序 / 拖宽</p>
+        </section>
+
+        <section class="card viewer-summary-card">
+        <div class="card-title-row">
+          <div class="card-title">总览</div>
+          <div class="viewer-toolbar-actions">
+            <div id="viewerWorkbookMeta" class="card-subtitle">正在统计…</div>
+            <button id="viewerWorkbookToggleBtn" type="button" class="secondary subsection-toggle viewer-mobile-toggle">展开总览</button>
+          </div>
+        </div>
+        <div id="viewerWorkbookStats" class="stats-grid compact subsection-body"></div>
+        </section>
+
+        <section class="card viewer-sheets-card">
+        <div class="card-title-row">
+          <div class="card-title">工作表</div>
+          <div class="viewer-toolbar-actions">
+            <div id="viewerSheetMeta" class="card-subtitle">正在加载工作表列表…</div>
+            <button id="viewerSheetTabsToggleBtn" type="button" class="secondary subsection-toggle viewer-mobile-toggle">展开工作表列表</button>
+          </div>
+        </div>
+        <div class="viewer-toolbar">
+          <label class="viewer-search">
+            <span>工作表搜索</span>
+            <input id="viewerSheetSearchInput" type="search" placeholder="工作表关键字…" />
+          </label>
+          <div class="viewer-toolbar-actions">
+            <button id="viewerPrevSheetBtn" type="button" class="secondary">上一张</button>
+            <button id="viewerNextSheetBtn" type="button" class="secondary">下一张</button>
+          </div>
+        </div>
+        <div id="viewerSheetTabs" class="sheet-tabs sheet-tabs-grid subsection-body"></div>
+        </section>
+
+        <section class="card viewer-filter-card">
+        <div class="card-title-row">
+          <div class="card-title">筛选</div>
+          <div class="viewer-toolbar-actions">
+            <div id="viewerFilterMeta" class="card-subtitle">支持多条规则</div>
+            <button id="viewerFiltersToggleBtn" type="button" class="secondary subsection-toggle viewer-mobile-toggle">展开筛选</button>
+          </div>
+        </div>
+        <div id="viewerFilterBody" class="subsection-body">
+          <div class="viewer-filter-grid">
+            <label class="viewer-search">
+              <span>列名</span>
+              <select id="viewerColumnSelect"></select>
+            </label>
+            <label class="viewer-search">
+              <span>条件</span>
+              <select id="viewerOperatorSelect">
+                <option value="contains">包含</option>
+                <option value="equals">等于</option>
+                <option value="not_equals">不等于</option>
+                <option value="starts_with">开头是</option>
+                <option value="ends_with">结尾是</option>
+                <option value="gt">大于</option>
+                <option value="gte">大于等于</option>
+                <option value="lt">小于</option>
+                <option value="lte">小于等于</option>
+                <option value="empty">为空</option>
+                <option value="not_empty">非空</option>
+              </select>
+            </label>
+            <label class="viewer-search">
+              <span>值</span>
+              <input id="viewerColumnValueInput" type="search" placeholder="输入值…" />
+            </label>
+            <div class="viewer-toolbar-actions">
+              <button id="viewerAddFilterBtn" type="button" class="secondary">添加</button>
+              <button id="viewerClearFiltersBtn" type="button" class="secondary">清空</button>
+            </div>
+          </div>
+          <div id="viewerActiveFilters" class="active-filter-list"></div>
+        </div>
+        </section>
+
+        <section class="card viewer-window-card">
+        <div class="card-title-row">
+          <div class="card-title">窗口</div>
+          <div class="viewer-toolbar-actions">
+            <div id="viewerWindowMeta" class="card-subtitle">显示全部</div>
+            <button id="viewerWindowToggleBtn" type="button" class="secondary subsection-toggle viewer-mobile-toggle">展开窗口</button>
+          </div>
+        </div>
+        <div id="viewerWindowBody" class="subsection-body">
+          <div class="viewer-toolbar">
+            <label class="viewer-search">
+              <span>起始行号</span>
+              <input id="viewerWindowStartInput" type="number" min="1" step="1" value="1" />
+            </label>
+            <label class="viewer-search">
+              <span>显示行数</span>
+              <input id="viewerWindowSizeInput" type="number" min="20" step="20" value="200" />
+            </label>
+            <div class="viewer-toolbar-actions">
+              <button id="viewerApplyWindowBtn" type="button" class="secondary">应用</button>
+              <button id="viewerResetWindowBtn" type="button" class="secondary">全部</button>
+            </div>
+          </div>
+        </div>
+        </section>
+
+        <section class="card viewer-table-card">
+        <div id="viewerTableWrap" class="excel-preview-empty">正在加载预览内容…</div>
+        </section>
+      </main>
+    </div>
+
+    <script src="/shared.js?v=1.9.783"></script>
+    <script src="/version-widget.js?v=1.9.783"></script>
+    <script src="/excel-viewer.js?v=1.9.783"></script>
+  </body>
+</html>

@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>收藏基金评分 - Fund-ANA</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/styles.css?v=1.9.783" />
+  </head>
+  <body class="layout-wide page-favorites">
+    <div class="dashboard-app">
+      <header class="site-header">
+        <div class="site-shell">
+          <a class="site-brand" href="/">
+            <span class="site-brand-mark">FA</span>
+            <span class="site-brand-copy">
+              <strong>Fund-ANA</strong>
+              <small>Bond Fund Screening</small>
+            </span>
+          </a>
+          <nav class="page-nav page-nav-top">
+            <a href="/">总览</a>
+            <a href="/recommendations">推荐</a>
+            <a href="/favorites" class="active" aria-current="page">收藏</a>
+            <a href="/tracker">跟踪</a>
+            <a href="/reports">文件</a>
+            <a href="/task-summary">任务</a>
+            <a href="/operations">运行</a>
+            <a href="/api-settings">接口设置</a>
+          </nav>
+        </div>
+      </header>
+
+      <section class="page-hero">
+        <div class="page-hero-shell">
+          <div class="page-hero-main">
+            <div class="eyebrow">Favorite Funds</div>
+            <h1>收藏评分</h1>
+            <p>持仓对比</p>
+            <div class="page-hero-actions">
+              <a class="preview-link" href="#favoriteInputCard">开始查询</a>
+              <a class="preview-link" href="/recommendations">查看推荐</a>
+            </div>
+          </div>
+          <aside class="page-hero-side">
+            <div class="hero-badge-stack">
+              <div id="favoritesHeaderRunBadge" class="status-badge">
+                <span class="status-dot"></span>
+                <span>状态检测中…</span>
+              </div>
+              <div id="favoritesHeaderHealthBadge" class="version-badge">数据源检测中…</div>
+            </div>
+            <details class="compact-disclosure hero-details"><summary>发布详情</summary><div id="favoritesHeroMeta" class="hero-meta-card"></div></details>
+          </aside>
+        </div>
+      </section>
+
+      <main class="dashboard-main">
+        <section class="card card-emphasis page-section-anchor" id="favoriteInputCard">
+          <div class="card-title-row">
+            <div>
+              <div class="card-title">查询概览</div>
+              <div class="card-subtitle">代码输入 / 历史记录</div>
+            </div>
+          </div>
+          <div class="favorite-query-grid">
+            <div class="favorite-query-panel">
+              <label class="favorite-field-label" for="favoriteQueryLabel">名称</label>
+              <input id="favoriteQueryLabel" class="favorite-text-input" type="text" maxlength="60" placeholder="如：债基持仓" />
+              <label class="favorite-field-label" for="favoriteCodesInput">基金代码</label>
+              <textarea id="favoriteCodesInput" class="favorite-code-textarea" rows="4" placeholder="007520&#10;004827&#10;004322"></textarea>
+              <div class="favorite-query-actions">
+                <button id="favoriteQuerySubmitBtn" type="button">开始查询</button>
+                <button id="favoriteCodesClearBtn" type="button" class="secondary">清空输入</button>
+              </div>
+            </div>
+            <div class="favorite-history-panel">
+              <div class="favorite-history-header">
+                <strong>历史查询</strong>
+                <div class="favorite-history-actions">
+                  <button id="favoriteHistoryToggleBtn" type="button" class="secondary">收起记录</button>
+                  <button id="favoriteHistoryRefreshBtn" type="button" class="secondary">刷新记录</button>
+                </div>
+              </div>
+              <div id="favoriteHistoryList" class="favorite-history-list"></div>
+            </div>
+          </div>
+          <div id="favoriteQueryBanner" class="info-banner">
+            <strong>口径说明</strong>
+            <span>用户输入基金优先查询实时 API；评分与风险指标使用正式分析快照</span>
+          </div>
+        </section>
+
+        <section class="card page-list-surface favorite-results-card" id="favoriteResultsCard">
+          <div class="card-title-row">
+            <div>
+              <div class="card-title">收藏基金列表</div>
+              <div id="favoriteScoreMeta" class="card-subtitle" role="status" aria-live="polite">尚未发起查询</div>
+            </div>
+            <div class="favorite-export-actions">
+              <span id="favoriteExportStatus" class="card-subtitle" role="status" aria-live="polite"></span>
+              <button id="favoriteExportBtn" type="button" class="secondary" disabled title="导出当前筛选后的全部基金，保留列和排序">导出 Excel</button>
+            </div>
+          </div>
+          <p class="card-subtitle favorite-result-source-note">评分与风险来自正式分析快照；各字段来源见查询说明。</p>
+          <div id="favoriteLoadingState" class="subtle-panel favorite-loading-state is-hidden">
+            <strong>查询状态</strong>
+            <span>正在读取收藏基金评分、风格门槛和对比结果。</span>
+          </div>
+          <div class="list-summary-stack">
+            <div id="favoriteViewBar" class="favorite-view-bar"></div>
+            <details id="favoriteFilterDetails" class="compact-disclosure favorite-filter-disclosure" hidden>
+              <summary><span>筛选条件</span><small id="favoriteFilterSummary">全部结果</small></summary>
+              <div id="favoriteFilterBar" class="recommendation-filter-bar"></div>
+            </details>
+            <details class="compact-disclosure favorite-context-disclosure">
+              <summary><span>查询与风格说明</span><small id="favoriteContextSummaryNote"></small></summary>
+              <div id="favoriteScoreStats" class="stats-grid compact"></div>
+              <div id="favoriteScoreNarrative" class="info-banner"></div>
+              <div id="favoriteSourceLegend" class="favorite-source-legend"></div>
+              <div id="favoriteStyleThresholdSummary" class="favorite-threshold-overview"></div>
+              <div id="favoriteListHints" class="active-filter-list recommendation-list-hints"></div>
+            </details>
+          </div>
+          <div id="favoriteTableToolbar"></div>
+          <div id="favoriteScoreTable" class="recommendation-list-shell"></div>
+        </section>
+      </main>
+    </div>
+
+    <script src="/shared.js?v=1.9.783"></script>
+    <script src="/version-widget.js?v=1.9.783"></script>
+    <script src="/favorites-export.js?v=1.9.783"></script>
+    <script src="/favorites.js?v=1.9.783"></script>
+  </body>
+</html>

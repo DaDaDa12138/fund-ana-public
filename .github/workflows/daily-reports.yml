@@ -1,0 +1,224 @@
+name: Daily Fund Reports
+
+on:
+  schedule:
+    # GitHub's base UTC cron: 23:47 UTC = 07:47 next day Asia/Shanghai.
+    # Keep business dates, receipt boundaries and runtime TZ in Shanghai.
+    - cron: '47 23 * * *'
+    # Catch missed/delayed schedules; verified completion skips expensive restore.
+    # 02:47 UTC = 10:47 Asia/Shanghai.
+    - cron: '47 2 * * *'
+    # Bounded catch-up probes: Shanghai 08:17, 09:17, 12:17.
+    # A completed daily receipt makes these cheap no-ops, not full reruns.
+    - cron: '17 0,1,4 * * *'
+    # Saturday 19:17 UTC = Sunday 03:17 Asia/Shanghai.
+    - cron: '17 19 * * 6'
+  workflow_dispatch:
+    inputs:
+      operation:
+        description: 'Real API collection/publication, intraday retry, or verify current reports'
+        required: true
+        default: daily_refresh
+        type: choice
+        options: [daily_refresh, intraday_refresh, weekly_maintenance, publish_only, schedule_check]
+permissions:
+  contents: read
+concurrency:
+  group: fund-ana-production-report-publication
+  cancel-in-progress: false
+jobs:
+  publish:
+    if: github.repository == 'DaDaDa12138/fund-ana-public' && github.ref == 'refs/heads/main' && vars.FUND_ANA_PRODUCTION_ENABLED == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 350
+    permissions:
+      contents: read
+      actions: read
+    env:
+      TZ: Asia/Shanghai
+      FUND_ANA_STATE_REPOSITORY: DaDaDa12138/fund-ana
+    steps:
+      - name: Checkout trusted source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Verify private storage access before reading data
+        env:
+          GH_TOKEN: ${{ secrets.FUND_ANA_STATE_TOKEN }}
+        run: python3 scripts/validate_github_split_storage.py
+      - name: Check Shanghai daily completion before catch-up
+        id: daily
+        env:
+          GH_TOKEN: ${{ secrets.FUND_ANA_STATE_TOKEN }}
+          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_EVENT_SCHEDULE: ${{ github.event.schedule }}
+          SCHEDULE_CHECK_ONLY: ${{ inputs.operation == 'schedule_check' }}
+        run: python3 scripts/check_github_daily_completion.py
+      - name: Prepare ephemeral runner disk and state tooling
+        if: steps.daily.outputs.run == 'true'
+        run: |
+          sudo timedatectl set-timezone Asia/Shanghai
+          # Preinstalled SDKs unused by this Python/Node project.
+          docker image prune -af
+          docker builder prune -af
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache /usr/share/swift /usr/local/share/powershell /usr/local/share/chromium /opt/microsoft /usr/local/lib/node_modules /usr/local/share/boost /usr/lib/jvm /usr/local/julia* /usr/share/miniconda /opt/az /usr/local/aws-cli /usr/share/gradle* /usr/share/maven
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq zstd python3-venv
+          /usr/bin/python3 -m venv "$RUNNER_TEMP/fund-ana-state-python"
+          "$RUNNER_TEMP/fund-ana-state-python/bin/python3" -m pip install --disable-pip-version-check PyYAML
+          echo "$RUNNER_TEMP/fund-ana-state-python/bin" >> "$GITHUB_PATH"
+          df -h / /mnt
+      - name: Restore verified durable cloud state
+        id: restore
+        if: steps.daily.outputs.run == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.FUND_ANA_STATE_TOKEN }}
+        run: |
+          mkdir -p .cloud-private-logs
+          python3 scripts/manage_github_cloud_state.py restore --receipt .cloud-restored.json > .cloud-private-logs/restore.log 2>&1
+          python3 scripts/configure_github_hosted.py
+          df -h /
+          gh api rate_limit --jq '.resources.core | {limit,remaining,reset}' || echo 'GitHub API quota observation unavailable'
+          echo 'ready=true' >> "$GITHUB_OUTPUT"
+      - name: Build cloud runtime and its API proxy
+        if: steps.daily.outputs.run == 'true'
+        run: |
+          docker build -t fund-ana:cloud .
+          docker build -t fund-ana-tiantian:cloud deploy/tiantian-api
+          cloud_host_sha=$(python3 -c "from pathlib import Path; from scripts.isolation_support import source_manifest,manifest_digest; print(manifest_digest(source_manifest(Path.cwd())))")
+          cloud_image_sha=$(docker run --rm --entrypoint python fund-ana:cloud -c "from pathlib import Path; from scripts.isolation_support import source_manifest,manifest_digest; print(manifest_digest(source_manifest(Path('/app'))))")
+          test "$cloud_host_sha" = "$cloud_image_sha"
+          echo "Cloud image/runtime source SHA: $cloud_image_sha"
+          docker network create fund-ana-cloud
+          docker run -d --name tiantian-api --network fund-ana-cloud fund-ana-tiantian:cloud
+          docker run -d --name fund-ana-cloud-web --network fund-ana-cloud \
+            -e FUND_ANA_DISABLE_EMBEDDED_SCHEDULER=1 -e TZ=Asia/Shanghai \
+            -v "$GITHUB_WORKSPACE:/app" fund-ana:cloud \
+            gunicorn -b 0.0.0.0:8090 --workers 1 --threads 4 --timeout 120 backend.app:app
+          docker exec fund-ana-cloud-web python scripts/validate_github_hosted_history.py > .cloud-private-logs/history.log 2>&1
+      - name: Collect real APIs, calculate and commit formal publication
+        id: production
+        if: steps.daily.outputs.run == 'true'
+        env:
+          OPERATION: ${{ inputs.operation || (github.event.schedule == '17 19 * * 6' && 'weekly_maintenance' || 'daily_refresh') }}
+        run: |
+          set +e
+          docker run --rm --name fund-ana-cloud-job --network fund-ana-cloud \
+            -e TZ=Asia/Shanghai -e GITHUB_RUN_ID -e GITHUB_RUN_ATTEMPT \
+            -e GITHUB_EVENT_NAME -e GITHUB_REPOSITORY -e FUND_ANA_STATE_REPOSITORY -e GITHUB_EVENT_SCHEDULE='${{ github.event.schedule }}' \
+            -v "$GITHUB_WORKSPACE:/app" fund-ana:cloud \
+            python scripts/run_github_hosted_job.py --job "$OPERATION" --directory /app/cloud-export > .cloud-private-logs/production.log 2>&1
+          status=$?
+          set -e
+          echo "exit_code=$status" >> "$GITHUB_OUTPUT"
+      - name: Validate runtime API endpoints
+        id: api
+        if: always() && steps.production.outputs.exit_code != ''
+        run: |
+          docker exec -i fund-ana-cloud-web python - > .cloud-private-logs/runtime-api.log 2>&1 <<'PY'
+          import json,urllib.request
+          expected=json.load(open('/app/cloud-export/bundle/bundle.json'))['publication']
+          values={}
+          for path in ('health','dashboard/latest','tracker/current','scheduler/status/detail'):
+              with urllib.request.urlopen('http://127.0.0.1:8090/api/'+path,timeout=120) as response:
+                  values[path]=json.load(response)
+          assert values['health'].get('status')=='ok', 'runtime_health_failed'
+          for path in ('dashboard/latest','tracker/current'):
+              assert values[path].get('run_id')==expected['run_id'], 'runtime_publication_mismatch:'+path
+          assert values['dashboard/latest']['counts']['final_count']==expected['counts']['final_count'], 'dashboard_count_mismatch'
+          assert values['tracker/current']['row_count']==expected['counts']['final_count'], 'tracker_count_mismatch'
+          assert values['scheduler/status/detail'].get('current_published_run_id')==expected['run_id'], 'scheduler_publication_mismatch'
+          print(json.dumps({'runtime_api_validation':'passed','publication':expected}))
+          PY
+          df -h /
+      - name: Record failed runtime verification
+        if: always() && steps.api.outcome == 'failure'
+        run: |
+          # The single-shot job has exited; only its finalized export changes
+          # ownership here. Runtime writers stop before the broader state save.
+          if test -d cloud-export; then sudo chown -hR "$(id -u):$(id -g)" cloud-export; fi
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          path=Path('cloud-export/check.json')
+          if path.exists():
+              value=json.loads(path.read_text())
+              value.update(status='failed',error_code='runtime_api_validation_failed')
+              path.write_text(json.dumps(value,ensure_ascii=False,indent=2)+'\n')
+          PY
+      - name: Save next durable state before exposing its reports
+        id: state
+        if: always() && steps.production.outputs.exit_code != ''
+        env:
+          GH_TOKEN: ${{ secrets.FUND_ANA_STATE_TOKEN }}
+        run: |
+          docker rm -f fund-ana-cloud-web
+          # Capture journals are deliberately mode 0600. The container writes
+          # as root; return ownership after all application writers stop so
+          # the unprivileged runner can verify and persist those exact bytes.
+          for folder in backend/data reports logs core/logs cloud-export config core/config; do
+            if test -d "$folder"; then sudo chown -hR "$(id -u):$(id -g)" "$folder"; fi
+          done
+          test -f cloud-export/bundle/bundle.json
+          python3 scripts/manage_github_cloud_state.py save --receipt cloud-export/state-receipt.json > .cloud-private-logs/state.log 2>&1
+          df -h /
+          gh api rate_limit --jq '.resources.core | {limit,remaining,reset}' || echo 'GitHub API quota observation unavailable'
+          echo 'saved=true' >> "$GITHUB_OUTPUT"
+      - name: Store verified reports in repository
+        if: always() && steps.state.outputs.saved == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.FUND_ANA_STATE_TOKEN }}
+        run: |
+          python3 - <<'PY'
+          import json,os
+          from pathlib import Path
+          path=Path('cloud-export/check.json')
+          check=json.loads(path.read_text())
+          state=json.loads(Path('cloud-export/state-receipt.json').read_text())
+          check.update(cloud_state_commit=state['state_commit'],source_sha=os.environ['GITHUB_SHA'])
+          path.write_text(json.dumps(check,ensure_ascii=False,indent=2)+'\n')
+          PY
+          python3 scripts/sync_github_reports.py --repository "$FUND_ANA_STATE_REPOSITORY" --directory cloud-export > .cloud-private-logs/report-sync.log 2>&1
+          echo 'Verified state and reports saved to private storage. Executor: public standard GitHub-hosted Runner.' >> "$GITHUB_STEP_SUMMARY"
+      - name: Record restore or persistence failure without advancing reports
+        if: always() && steps.daily.outputs.run == 'true' && steps.state.outputs.saved != 'true'
+        env:
+          GH_TOKEN: ${{ secrets.FUND_ANA_STATE_TOKEN }}
+        run: |
+          python3 - <<'PY'
+          from datetime import datetime
+          from pathlib import Path
+          import json,os
+          from zoneinfo import ZoneInfo
+          folder=Path('cloud-failure');folder.mkdir(exist_ok=True)
+          check={'schema':'fund-ana-github-check-v1','github_run_id':os.environ['GITHUB_RUN_ID'],
+                 'attempt':os.environ['GITHUB_RUN_ATTEMPT'],'status':'failed','executor':'github_hosted',
+                 'source_sha':os.environ['GITHUB_SHA'],'github_event_name':os.environ['GITHUB_EVENT_NAME'],
+                 'github_repository':os.environ['GITHUB_REPOSITORY'],
+                 'storage_repository':os.environ['FUND_ANA_STATE_REPOSITORY'],
+                 'github_schedule':'${{ github.event.schedule }}' or None,
+                 'timezone':'Asia/Shanghai','checked_at':datetime.now(ZoneInfo('Asia/Shanghai')).isoformat(),
+                 'check_date':datetime.now(ZoneInfo('Asia/Shanghai')).date().isoformat(),
+                 'error_code':'cloud_restore_or_persistence_failed'}
+          original=Path('cloud-export/check.json')
+          if original.exists():
+              previous=json.loads(original.read_text())
+              check.update({k:v for k,v in previous.items() if k.startswith('task_')})
+              check.update(job=previous.get('job'),job_error_code=previous.get('error_code'))
+          (folder/'check.json').write_text(json.dumps(check))
+          PY
+          python3 scripts/sync_github_reports.py --repository "$FUND_ANA_STATE_REPOSITORY" --directory cloud-failure > .cloud-private-logs/failure-sync.log 2>&1
+      - name: Preserve collection or persistence failure
+        if: always() && steps.daily.outputs.run == 'true' && (steps.production.outputs.exit_code != '0' || steps.state.outputs.saved != 'true' || steps.api.outcome != 'success')
+        run: |
+          echo 'Cloud collection or state persistence was not a clean success. Previous durable state/report remains available; inspect the execution receipt.'
+          exit 1
+      - name: Save private diagnostic logs
+        if: always() && steps.daily.outputs.run == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.FUND_ANA_STATE_TOKEN }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python3 scripts/store_github_private_diagnostics.py
+      - name: Stop ephemeral services
+        if: always() && steps.daily.outputs.run == 'true'
+        run: docker rm -f fund-ana-cloud-job fund-ana-cloud-web tiantian-api || true

@@ -1,0 +1,110 @@
+name: Regression Smoke
+
+"on":
+  workflow_dispatch:
+  push:
+    paths:
+      - "backend/**"
+      - "core/**"
+      - "frontend/**"
+      - "scripts/**"
+      - "tests/**"
+      - "config/**"
+      - "requirements.txt"
+      - "requirements-runtime.txt"
+      - "requirements-analytics.txt"
+      - "Dockerfile"
+      - ".dockerignore"
+      - ".github/workflows/regression-smoke.yml"
+  pull_request:
+    paths:
+      - "backend/**"
+      - "core/**"
+      - "frontend/**"
+      - "scripts/**"
+      - "tests/**"
+      - "config/**"
+      - "requirements.txt"
+      - "requirements-runtime.txt"
+      - "requirements-analytics.txt"
+      - "Dockerfile"
+      - ".dockerignore"
+      - ".github/workflows/regression-smoke.yml"
+
+concurrency:
+  group: regression-smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt pytest
+
+      - name: Run regression smoke
+        id: smoke
+        shell: bash
+        continue-on-error: true
+        run: |
+          set +e
+          python scripts/run_regression_smoke.py --group syntax --group workflow --group scheduler_guard --group dashboard_payload --group publication_integrity | tee smoke_console.log
+          status=${PIPESTATUS[0]}
+          summary_path=$(python - <<'PY'
+          from pathlib import Path
+
+          root = Path("reports/audit/regression_smoke")
+          candidates = sorted(
+              (path for path in root.glob("regression_smoke_*/summary.json") if path.is_file()),
+              key=lambda path: (path.stat().st_mtime, path.name),
+          )
+          print(candidates[-1] if candidates else "")
+          PY
+          )
+          artifact_dir=""
+          if [ -n "$summary_path" ]; then
+            artifact_dir=$(dirname "$summary_path")
+          fi
+          echo "exit_code=$status" >> "$GITHUB_OUTPUT"
+          echo "summary_path=$summary_path" >> "$GITHUB_OUTPUT"
+          echo "artifact_dir=$artifact_dir" >> "$GITHUB_OUTPUT"
+
+      - name: Upload smoke artifact
+        if: always() && steps.smoke.outputs.artifact_dir != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: regression-smoke-${{ github.run_id }}
+          path: ${{ steps.smoke.outputs.artifact_dir }}
+          if-no-files-found: error
+
+      - name: Upload smoke console
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: regression-smoke-console-${{ github.run_id }}
+          path: smoke_console.log
+          if-no-files-found: error
+
+      - name: Fail workflow if smoke failed
+        if: steps.smoke.outputs.exit_code != '0'
+        run: |
+          echo "Regression smoke failed. Summary: ${{ steps.smoke.outputs.summary_path }}"
+          exit 1

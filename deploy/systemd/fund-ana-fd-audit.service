@@ -1,0 +1,16 @@
+[Unit]
+Description=Fund ANA read-only host file descriptor audit
+Requires=fund-ana-fd-audit.socket
+After=fund-ana-fd-audit.socket
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 /mnt/Project/Fund-ANA/scripts/storage_fd_audit_server.py
+WorkingDirectory=/mnt/Project/Fund-ANA
+User=root
+NoNewPrivileges=true
+ProtectSystem=strict
+CapabilityBoundingSet=CAP_DAC_READ_SEARCH CAP_SYS_PTRACE
+RestrictAddressFamilies=AF_UNIX
+Restart=on-failure
+RestartSec=3

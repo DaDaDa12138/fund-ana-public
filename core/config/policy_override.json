@@ -1,0 +1,17 @@
+{
+  "enabled": true,
+  "applied_at": "2026-03-07T08:26:46.558724",
+  "patch": {
+    "SCORING_POLICY_RECOMMENDED": {
+      "enabled": false
+    },
+    "SCORING_POLICY": {
+      "default_score_key": "combo_score",
+      "per_fund_type": {
+        "bond": "combo_score",
+        "stock": "combo_score",
+        "hybrid": "combo_score"
+      }
+    }
+  }
+}

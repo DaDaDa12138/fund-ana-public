@@ -1,0 +1,179 @@
+{
+  "2021": {
+    "url": "https://www.sse.com.cn/disclosure/announcement/general/c/c_20201224_5286949.shtml",
+    "http_status": 200,
+    "captured_at": "2026-10-28T14:20:13.624648+00:00",
+    "response_sha256": "61ba5c6d5d71c1ea578daf9e27346fe358891bb29531b57efe90cce8ad638b3c",
+    "raw_artifact": "reports/audit/third_party_remediation_20261028/calendar_sources/sse_2021_closures.html",
+    "closures": [
+      [
+        "2021-01-01",
+        "2021-01-03"
+      ],
+      [
+        "2021-02-11",
+        "2021-02-17"
+      ],
+      [
+        "2021-04-03",
+        "2021-04-05"
+      ],
+      [
+        "2021-05-01",
+        "2021-05-05"
+      ],
+      [
+        "2021-06-12",
+        "2021-06-14"
+      ],
+      [
+        "2021-09-19",
+        "2021-09-21"
+      ],
+      [
+        "2021-10-01",
+        "2021-10-07"
+      ]
+    ]
+  },
+  "2022": {
+    "url": "https://www.sse.com.cn/disclosure/announcement/general/c/c_20211220_5662606.shtml",
+    "http_status": 200,
+    "captured_at": "2026-10-28T14:20:13.547277+00:00",
+    "response_sha256": "164e86063214007a32fab04a25348aeb861ea9cd378b8091ed9194d24e522ab8",
+    "raw_artifact": "reports/audit/third_party_remediation_20261028/calendar_sources/sse_2022_closures.html",
+    "closures": [
+      [
+        "2022-01-01",
+        "2022-01-03"
+      ],
+      [
+        "2022-01-31",
+        "2022-02-06"
+      ],
+      [
+        "2022-04-03",
+        "2022-04-05"
+      ],
+      [
+        "2022-04-30",
+        "2022-05-04"
+      ],
+      [
+        "2022-06-03",
+        "2022-06-05"
+      ],
+      [
+        "2022-09-10",
+        "2022-09-12"
+      ],
+      [
+        "2022-10-01",
+        "2022-10-07"
+      ]
+    ]
+  },
+  "2023": {
+    "url": "https://www.sse.com.cn/disclosure/announcement/general/c/c_20221227_5714458.shtml",
+    "http_status": 200,
+    "captured_at": "2026-10-28T14:20:13.526735+00:00",
+    "response_sha256": "45b7784758d09ca1de0b83045efcfa38361462d82e2987d9b96fe47487b7870b",
+    "raw_artifact": "reports/audit/third_party_remediation_20261028/calendar_sources/sse_2023_closures.html",
+    "closures": [
+      [
+        "2023-01-01",
+        "2023-01-02"
+      ],
+      [
+        "2023-01-21",
+        "2023-01-27"
+      ],
+      [
+        "2023-04-05",
+        "2023-04-05"
+      ],
+      [
+        "2023-04-29",
+        "2023-05-03"
+      ],
+      [
+        "2023-06-22",
+        "2023-06-24"
+      ],
+      [
+        "2023-09-29",
+        "2023-10-06"
+      ]
+    ]
+  },
+  "2024": {
+    "url": "https://www.sse.com.cn/disclosure/dealinstruc/closed/c/c_20231226_5733941.shtml",
+    "http_status": 200,
+    "captured_at": "2026-10-28T14:20:13.518562+00:00",
+    "response_sha256": "553c09f2b9482690b957f207a03a2a909a4b311e8985ed1fcf752d114af95bc9",
+    "raw_artifact": "reports/audit/third_party_remediation_20261028/calendar_sources/sse_2024_closures.html",
+    "closures": [
+      [
+        "2024-01-01",
+        "2024-01-01"
+      ],
+      [
+        "2024-02-09",
+        "2024-02-17"
+      ],
+      [
+        "2024-04-04",
+        "2024-04-06"
+      ],
+      [
+        "2024-05-01",
+        "2024-05-05"
+      ],
+      [
+        "2024-06-10",
+        "2024-06-10"
+      ],
+      [
+        "2024-09-15",
+        "2024-09-17"
+      ],
+      [
+        "2024-10-01",
+        "2024-10-07"
+      ]
+    ]
+  },
+  "2025": {
+    "url": "https://www.sse.com.cn/disclosure/dealinstruc/closed/c/c_20241223_10767110.shtml",
+    "http_status": 200,
+    "captured_at": "2026-10-28T14:20:13.595502+00:00",
+    "response_sha256": "a9ffc97241c0ffa81b8c3ee24b07ca79fe8414468528e94846dcac9900077feb",
+    "raw_artifact": "reports/audit/third_party_remediation_20261028/calendar_sources/sse_2025_closures.html",
+    "closures": [
+      [
+        "2025-01-01",
+        "2025-01-01"
+      ],
+      [
+        "2025-01-28",
+        "2025-02-04"
+      ],
+      [
+        "2025-04-04",
+        "2025-04-06"
+      ],
+      [
+        "2025-05-01",
+        "2025-05-05"
+      ],
+      [
+        "2025-05-31",
+        "2025-06-02"
+      ],
+      [
+        "2025-10-01",
+        "2025-10-08"
+      ]
+    ]
+  }
+}

@@ -1,0 +1,354 @@
+# Source distribution template; copy to project.yaml and review local paths before starting.
+project:
+  name: Fund-ANA
+  timezone: Asia/Shanghai
+apis:
+  tiantian_base_url: http://tiantian-api:3000
+  tiantian_valuation_primary_url: https://fundcomapi.tiantianfunds.com/mm/newCore/FundValuationLast
+  tiantian_valuation_fallback_url: https://fundcomapi.eastmoney.com/mm/newCore/FundValuationLast
+  eastmoney_fund_info_url: https://fundmobapi.eastmoney.com/FundMNewApi/FundMNFInfo
+  fund_status_url: https://fund.eastmoney.com/Data/Fund_JJJZ_Data.aspx
+  danjuan:
+    # Public detail endpoint.  It is an optional evidence source only; keep
+    # disabled until a full coverage and freshness cycle is accepted.
+    base_url: https://danjuanapp.com/djapi/fund
+    enabled: false
+    timeout_seconds: 15
+    min_interval_seconds: 0.2
+  publication_validation:
+    # Same supplier: endpoint/database consistency, not independent vendors.
+    # All original NAV/return/missing-data gates remain mandatory.
+    provider: eastmoney_cross_endpoint
+  valuation_validation:
+    max_age_seconds: 1800
+    max_base_age_days: 10
+  autostock_base_url: https://api.autostock.cn/v1
+  autostock:
+    # Oct9/10 bounded probes: repeated ConnectTimeout without HTTP response.
+    # Formal checks use the two configured Eastmoney/Tiantian endpoints.
+    enabled: false
+    rate_limit:
+      max_calls_per_hour: 100
+      min_interval_seconds: 2.0
+      shared_state_path: backend/data/autostock_rate_limit_state.json
+    batch:
+      fund_default: 50
+      fund_detail_default: 50
+    directory_cache:
+      path: backend/data/autostock_fund_directory_cache.json
+      ttl_seconds: 3600
+    report_validation_cache:
+      ttl_seconds: 14400
+paths:
+  core_root: core
+  database_path: backend/data/bond_funds.db
+  report_history_database: backend/data/report_history.sqlite
+  state_file: backend/data/workflow_state.json
+  reports_dir: reports
+  runs_dir: reports/runs
+  core_output_dir: reports/core_output
+  latest_report_file: reports/latest.json
+  publication_registry_file: reports/publication_registry.json
+  favorites_history_file: backend/data/favorite_fund_queries.json
+  archived_runs_dir: reports/archive/superseded_runs
+workflow:
+  publication_max_snapshot_age_days: 10
+  run_collection_by_default: true
+  run_screening_by_default: true
+  collect_details: true
+  collect_managers: true
+  collect_companies: true
+  collect_risk: true
+  collect_nav_incremental: true
+  nav_workers: 5
+  nav_batch_size: 500
+  nav_batch_interval: 10
+  detail_workers: 8
+  manager_workers: 5
+  risk_workers: 5
+  holding_workers: 10
+  task_timeout_seconds:
+    collect-details: 2400
+    collect-managers: 3600
+    collect-companies: 1800
+    collect-nav: 7200
+    collect-period-returns: 1800
+    calculate-risk: 7200
+    supplement-holding-period: 1800
+    daily-screening-master: 7200
+    frozen-baseline-replay: 180
+  task_idle_timeout_seconds:
+    collect-details: 180
+    collect-managers: 180
+    collect-companies: 180
+    collect-period-returns: 180
+  exclude_holding_days_gt: 90
+  preview_top_n: 15
+  final_selection_target_max: 320
+  final_selection_group_min_ratio: 0.25
+  final_selection_high_score_new_fund_threshold: 85.0
+  final_selection_low_score_new_fund_threshold: 75.0
+collection:
+  period_return:
+    max_targets_per_run: 200
+    refresh_stale_hours: 24
+    failure_retry_hours: 12
+    max_nav_age_days: 14
+  company:
+    workers: 2
+    refresh_stale_days: 28
+    max_targets_per_run: 200
+    failure_retry_hours: 24
+  history:
+    default_years: 5
+    page_size: 1000
+  detail:
+    batch_size: 500
+    workers: 10
+    refresh_stale_days: 56
+    max_targets_per_run: 1000
+    empty_detail_cooldown_days: 7
+    empty_detail_stale_nav_days: 10
+    empty_detail_holding_days_threshold: 90
+    scale_refresh_retry_hours: 24
+    scale_refresh_max_targets_per_run: 120
+  manager:
+    workers: 5
+    fund_list_refresh_stale_days: 42
+    missing_list_retry_days: 7
+    list_failure_retry_hours: 24
+    detail_refresh_stale_days: 56
+    max_fund_targets_per_run: 1500
+    max_detail_targets_per_run: 300
+  annual_return:
+    workers: 8
+  rank:
+    workers: 8
+  incremental:
+    workers: 15
+    qps: 60
+    max_age_days: 1095
+    stale_threshold_days: 1095
+    empty_nav_payload_cooldown_hours: 12
+    no_advance_payload_cooldown_minutes: 30
+    only_active: false
+web:
+  host: 0.0.0.0
+  port: 8090
+scheduler:
+  enabled: true
+  host_mode: external_process
+  timezone: Asia/Shanghai
+  state_file: backend/data/scheduler_state.json
+  heartbeat_file: backend/data/scheduler_heartbeat.json
+  pid_file: backend/data/scheduler.pid
+  lock_file: backend/data/scheduler.lease
+  heartbeat_interval_seconds: 60
+  heartbeat_stale_after_seconds: 180
+  blocked_snapshot_retry_cooldown_minutes: 120
+  failed_screening_retry_cooldown_minutes: 120
+  workflow_busy_retry_cooldown_seconds: 300
+  long_term_history_empty_payload_retry_days: 7
+  long_term_history_empty_payload_upstream_limited_failures: 3
+  long_term_history_stale_refresh_upstream_limited_failures: 2
+  long_term_history_high_priority_stale_backlog_trigger: 400
+  long_term_history_high_priority_stale_limit: 160
+  effective_nav_coverage_ratio: 0.9
+  effective_nav_weekday_only: true
+  snapshot_watchdog:
+    enabled: true
+    interval_minutes: 15
+  storage_observation:
+    enabled: true
+    interval_hours: 6
+    timeout_seconds: 45
+    retain_observations: 120
+  storage_lifecycle:
+    enabled: true
+    archive_root: /mnt/Project-Archives/Fund-ANA
+    # Fixed reviewed policy: 02:15, 14 days, 60s / 2000 files / 8 GiB.
+  daily_refresh:
+    hour: 7
+    minute: 30
+    nav_history_sync_enabled: true
+    nav_history_sync_limit: 0
+    long_term_history_enabled: true
+    long_term_history_limit: 80
+    long_term_history_refresh_stale: true
+  intraday_refresh:
+    enabled: true
+    hour: 13
+    minute: 45
+    nav_workers: 15
+    nav_history_sync_enabled: true
+    nav_history_sync_limit: 0
+    long_term_history_enabled: false
+    long_term_history_limit: 0
+    long_term_history_refresh_stale: false
+  weekly_maintenance:
+    day_of_week: sun
+    hour: 3
+    minute: 0
+    nav_history_enabled: true
+    nav_history_limit: 400
+    plain_open_tail_follow_up:
+      enabled: true
+      category: plain_open_tail_follow_up
+      skip_risk_refresh: false
+    future_outlier_monitor:
+      enabled: true
+      category: future_outlier_monitor
+    holding_period_edge_audit:
+      enabled: true
+    nav_history_consistency_audit:
+      enabled: true
+    task_history_governance_preview:
+      enabled: true
+      retention_days: 14
+      recent_keep_per_task_status: 20
+      large_extra_data_threshold_bytes: 262144
+      max_sample_rows: 20
+      max_daily_summary_days: 30
+    task_history_cleanup_execution:
+      enabled: true
+      auto_apply_enabled: true
+      min_apply_candidate_total: 100
+      retention_days: 14
+      recent_keep_per_task_status: 20
+      max_sample_rows: 20
+      compress_backup: true
+    screening_storage_growth_audit:
+      enabled: true
+      days: 30
+      fund_types:
+      - bond
+      top_runs: 20
+      max_runs: 0
+      include_table_totals: true
+    screening_history_cleanup_preview:
+      enabled: true
+      recent_days: 30
+      fund_types:
+      - bond
+    screening_history_cleanup_runbook:
+      enabled: true
+      delete_batch_run_limit: 100
+    screening_history_cleanup_preflight:
+      enabled: true
+    screening_history_cleanup_execution:
+      enabled: true
+      mode: apply
+      start_batch: 1
+      end_batch: null
+      auto_create_backup_if_missing: true
+      backup_prefix: bond_funds_pre_screening_cleanup
+      backup_compress: true
+    screening_history_archive_preview:
+      enabled: true
+      archive_target_path: backend/data/archives/screening_history_details_archive.db
+    screening_history_archive_execution:
+      enabled: true
+      mode: archive-export
+      archive_target_path: backend/data/archives/screening_history_details_archive.db
+      chunk_size: 500
+    screening_history_archive_rotation:
+      enabled: true
+      mode: auto
+      max_active_size_gb: 8
+      min_active_run_count: 1
+      compute_sha256: true
+      columnar_compression: true
+    nav_history_archive_preview:
+      enabled: true
+      mode: archive_export
+      page_limit: 500000
+      max_pages_per_run: 6
+      auto_bind_latest_backup: true
+      auto_create_backup_if_missing: true
+      backup_prefix: bond_funds_pre_nav_archive
+      backup_compress: true
+    nav_history_archive_vacuum:
+      enabled: false
+      mode: auto
+      confirm_replace: true
+      min_free_space_multiplier: 1.25
+    rank_history_governance_audit:
+      enabled: true
+    rank_history_archive:
+      enabled: true
+      mode: auto
+      page_limit: 500000
+      max_pages_per_run: 6
+      auto_create_backup_if_missing: true
+      backup_prefix: bond_funds_pre_rank_archive
+      backup_compress: true
+    rank_history_archive_vacuum:
+      enabled: false
+      mode: auto
+      confirm_replace: true
+      min_free_space_multiplier: 1.25
+    incremental_vacuum:
+      enabled: true
+      max_pages: 50000
+      min_freelist_pages: 1000
+      max_seconds: 180
+    database_backup_cleanup_preview:
+      enabled: true
+      scheduled_keep_count: 6
+      unmanaged_retention_days: 14
+      keep_latest_manual_snapshot_per_family: 1
+      max_sample_files: 20
+    database_backup_cleanup_execution:
+      enabled: true
+      mode: apply
+      checkpoint_every: 50
+    maintenance_backup_retention:
+      enabled: true
+      keep_per_purpose: 1
+      min_age_days: 14
+      max_delete_files: 2
+    database_backup_compression_preview:
+      enabled: true
+      min_compress_size_mb: 128
+      max_sample_files: 20
+    database_backup_compression_execution:
+      enabled: true
+      mode: apply
+      checkpoint_every: 1
+    database_governance_health_audit:
+      enabled: true
+    database_optimization_completion_audit:
+      enabled: true
+    disk_cleanup:
+      archive_keep_count: 60
+      archive_keep_days: 30
+      logs_keep_days: 14
+      maintenance_candidate_keep_count: 0
+      maintenance_candidate_min_age_hours: 6
+      core_csv_compression_enabled: true
+      core_csv_keep_plain_days: 30
+    regression_smoke:
+      enabled: true
+      groups:
+      - scheduler_guard
+      - dashboard_payload
+      - publication_integrity
+      - scheduler_failure_drill
+      - strategy_reason_data_quality
+      - dynamic_quality_gate_overlap
+      - score_cluster_explainability
+      - annual_return_score_sharpe_coupling
+      - risk_residual_warnings
+      - high_score_friction_gates
+      - risk_adjusted_metric_stack
+      - final_selection_contraction_shadow
+    long_term_history_enabled: true
+    long_term_history_limit: 0
+    long_term_history_refresh_stale: true
+
+report_history:
+  read_mode: ledger
+  online_days: 14
+  quarantine_days: 30
+  quarantine_enabled: false
+  purge_enabled: false
