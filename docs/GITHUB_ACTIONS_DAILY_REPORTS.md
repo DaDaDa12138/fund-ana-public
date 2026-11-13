@@ -94,3 +94,11 @@ python3 scripts/manage_github_cloud_state.py restore --repository DaDaDa12138/fu
 - 上游缺失保持NULL，实时估值可选；失败保留旧报告，Action绿色不证明所有供应商字段完整。
 
 依据：[Actions计费](https://docs.github.com/zh/billing/concepts/product-billing/github-actions)、[定时事件](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule)。本文描述运行契约，不公开实际基金名单、NAV或私有审计收据。
+
+## 报告阅读排版（1.9.795）
+
+新生成的`report.md`先展示本期概览、基金分组预览、组合建议及累计跟踪；筛选门禁、阈值、诊断和技术路径采用GitHub原生`details/summary`折叠，章节使用唯一标题及页内导航。宽表超过七列时按字段分表，重复前两列用于对应记录，原字段值和相对行顺序保持不变。缺失以`—`显示、真实零值显示为0，管道、HTML及换行经过转义。
+
+GitHub分支README把正式名单、累计跟踪和分析报告归为下载表；前瞻验证与校验文件单独展开。由已核验CSV生成的阅读页保留完整成员、原始数值及名单顺序，运行身份和SHA信息折叠显示。
+
+历史原始`report.md`及manifest不重写；`publish_only`只刷新已核验报告的阅读页和索引，不重新采集、不生成新正式快照。原始报告采用新模板需要一次新的正式报告生成，不能把阅读页刷新解释为新日更。

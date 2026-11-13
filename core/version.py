@@ -21,7 +21,7 @@ except ImportError:  # pragma: no cover - Python 3.8 环境兼容兜底
     ZoneInfo = None
 
 # 基础回退版本号（当 docs/CHANGELOG_v*.md 不可用时使用）
-_FALLBACK_VERSION = "1.9.794"
+_FALLBACK_VERSION = "1.9.795"
 _SHANGHAI_TZ = ZoneInfo('Asia/Shanghai') if ZoneInfo else timezone(timedelta(hours=8))
 
 # 版本主数据优先来自 docs/CHANGELOG_v*.md

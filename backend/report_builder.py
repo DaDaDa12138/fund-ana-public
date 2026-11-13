@@ -12666,11 +12666,21 @@ def _markdown_table(df: pd.DataFrame, columns: list[str]) -> str:
     available = [column for column in columns if column in df.columns]
     if not available or df.empty:
         return "_无数据_"
-    rows = df[available].fillna("").astype(str).values.tolist()
-    header = "| " + " | ".join(available) + " |"
-    separator = "| " + " | ".join(["---"] * len(available)) + " |"
-    body = ["| " + " | ".join(row) + " |" for row in rows]
-    return "\n".join([header, separator, *body])
+    from backend.report_markdown import markdown_cell
+
+    # Split wide audit tables without dropping fields or changing row order.
+    groups = ([available] if len(available) <= 7 else
+              [available[:2] + available[start:start + 5] for start in range(2, len(available), 5)])
+    tables = []
+    for number, group in enumerate(groups, 1):
+        rows = df[group].values.tolist()
+        header = "| " + " | ".join(map(markdown_cell, group)) + " |"
+        separator = "| " + " | ".join(["---"] * len(group)) + " |"
+        body = ["| " + " | ".join(markdown_cell(value) for value in row) + " |" for row in rows]
+        if len(groups) > 1:
+            tables.append(f"字段分组 {number}/{len(groups)}（同一批记录，前两列用于对应）：\n")
+        tables.append("\n".join([header, separator, *body]))
+    return "\n\n".join(tables)
 
 
 
@@ -16943,7 +16953,7 @@ def _append_markdown_preview_table(
     if leading_blank:
         lines.append("")
     if label:
-        lines.append(label)
+        lines.extend([label, ""])
     lines.append(_markdown_table(preview_df, columns))
 
 
@@ -17454,18 +17464,18 @@ def _build_markdown_publish_and_recommendation_lines(
     lines.extend(
         [
             "",
-            "### 纯债稳健榜预览",
+            "## 纯债稳健榜预览",
             "",
             _markdown_table(
                 pd.DataFrame(summary.get("stable_final_preview") or []),
-                ["基金代码", "基金名称", "持有期状态", "债基风格标签", "长期稳定性标签", "正式投资评分", "项目质量信心", "推荐备注"],
+                ["基金代码", "基金名称", "正式投资评分", "债基风格标签", "持有期状态"],
             ),
             "",
-            "### 增强债弹性榜预览",
+            "## 增强债弹性榜预览",
             "",
             _markdown_table(
                 pd.DataFrame(summary.get("enhanced_final_preview") or []),
-                ["基金代码", "基金名称", "持有期状态", "债基风格标签", "长期稳定性标签", "正式投资评分", "项目质量信心", "推荐备注"],
+                ["基金代码", "基金名称", "正式投资评分", "债基风格标签", "持有期状态"],
             ),
             "",
         ]
@@ -17610,4 +17620,6 @@ def build_markdown_report(
     lines.extend(_build_markdown_publish_and_recommendation_lines(summary, final_preview))
     lines.extend(_build_markdown_portfolio_lines(summary))
     lines.extend(_build_markdown_watch_artifact_and_conclusion_lines(summary, excluded_preview, internal_watch_preview))
-    return "\n".join(lines)
+    from backend.report_markdown import reader_report
+
+    return reader_report(summary, lines)
