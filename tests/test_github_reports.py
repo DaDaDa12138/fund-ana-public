@@ -8,6 +8,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
+from openpyxl import Workbook
 
 from backend.github_reports import (
     ReportExportError, export_current, parse_scheduler_output, sha256, task_outcome,
@@ -29,6 +30,19 @@ def publication(tmp_path: Path):
     (directory / "formal.csv").write_text(
         "基金代码,基金名称,正式榜分组,正式投资评分,近1年(%),1年-最大回撤(%),持有期状态\n"
         "000001,synthetic fixture,纯债稳健榜,0,,0,synthetic status\n", encoding="utf-8-sig")
+    workbook = Workbook()
+    current = workbook.active
+    current.title = "当前在榜"
+    current.append(["当前在榜数", 1, "最新净值日期", "2026-01-01"])
+    current.append(["synthetic section labels"])
+    current.append(["基金代码", "基金名称", "正式榜分组", "正式投资评分", "出现次数", "出现频率(%)",
+                    "首次出现日期", "最后出现日期", "当前是否在榜", "近1月(%)", "近3月(%)", "近1年(%)", "持有期状态"])
+    current.append(["000001", "synthetic fixture", "纯债稳健榜", "0", "1", "100.00", "2026-01-01",
+                    "2026-01-01", "是", "0", None, None, "synthetic status"])
+    historical = workbook.create_sheet("完整数据")
+    historical.append(["synthetic exited fixture, excluded from current Markdown"])
+    workbook.save(directory / "tracker.xlsx")
+    workbook.close()
     (directory / "not-for-export.txt").write_text("synthetic private diagnostic")
     report = {"run_id": "synthetic_run", "generated_at": "2026-01-02T09:00:00",
               "counts": {"final_count": 1, "stable_bond_final_count": 1, "enhanced_bond_final_count": 0},

@@ -461,6 +461,14 @@ def test_superseded_initializer_and_missing_exclusions_are_verified_together(tmp
 def test_excluded_fund_nav_can_precede_publication_within_original_collection_window(tmp_path):
     output, bundle, check, db, result, before, after=superseded_fixture(tmp_path)
     bundle['publication']['nav_date']='2026-01-02'
+    from openpyxl import load_workbook
+    workbook = load_workbook(output / 'tracker.xlsx')
+    workbook['当前在榜']['D1'] = '2026-01-02'
+    workbook.save(output / 'tracker.xlsx')
+    workbook.close()
+    for item in bundle['files']:
+        if item['path'] == 'tracker.xlsx':
+            item.update(sha256=sha256(output / 'tracker.xlsx'), bytes=(output / 'tracker.xlsx').stat().st_size)
     write_json(output/'bundle.json',bundle)
     status,proof=hosted_task_outcome(result,0,before,after,output,Path(db.db_path))
     item=proof['superseded_refresh_proofs'][0]

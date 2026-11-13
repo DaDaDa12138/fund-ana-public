@@ -102,3 +102,11 @@ python3 scripts/manage_github_cloud_state.py restore --repository DaDaDa12138/fu
 GitHub分支README把正式名单、累计跟踪和分析报告归为下载表；前瞻验证与校验文件单独展开。由已核验CSV生成的阅读页保留完整成员、原始数值及名单顺序，运行身份和SHA信息折叠显示。
 
 历史原始`report.md`及manifest不重写；`publish_only`只刷新已核验报告的阅读页和索引，不重新采集、不生成新正式快照。原始报告采用新模板需要一次新的正式报告生成，不能把阅读页刷新解释为新日更。
+
+## 主榜累计跟踪 Markdown（1.9.796）
+
+每次报告同步核验原导出 bundle 后，从 `tracker.xlsx` 的“当前在榜”工作表生成 `views/<run>/<revision>/tracker.md`，并在分支 README、当期报告阅读页和 `latest.json.tracker_reading_view` 添加入口。Excel 的完整历史记录继续保留，历史曾入榜基金不混入当期主榜。
+
+生成时核对当前代码集合、数量、分组、评分、共同展示指标、摘要和净值日期；损坏文件、重复代码、未缓存公式或不一致会阻断同步，保留旧的最新指针。组内保留工作簿顺序，累计次数、频率、首末日期和收益沿用原单元格，不重算或改变精度；NULL显示`—`、真实零值保留为0。
+
+页面以累计概览、首次新增/连续/回归/掉出及两类主榜为主体。累计表最多七列，当期指标六列，每30只折叠；原文件SHA及身份收进来源说明。派生文件置于 `views/`，不修改不可变报告 bundle、正式 manifest 或原 `tracker.xlsx`，也不新增正式发布代际。

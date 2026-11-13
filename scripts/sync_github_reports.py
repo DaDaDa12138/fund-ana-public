@@ -18,6 +18,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from backend.github_reports import ReportExportError, verify_bundle, write_json
 from backend.github_report_view import report_view, report_index
+from backend.github_tracker_view import tracker_view
 from backend.shanghai_time import now_shanghai, display_shanghai
 from core.utils.period_return_snapshot import verified_superseded_date_proof
 
@@ -110,13 +111,19 @@ def merge_export(repository: Path, check: dict, bundle_dir: Path | None) -> dict
         # A delayed export must not move the repository's latest pointer backwards.
         if latest and int(latest["publication"]["generation"]) > int(publication["generation"]):
             raise ReportExportError("publication_generation_regression")
+        csv_text = (destination / "formal.csv").read_text(encoding="utf-8-sig")
+        rendered = report_view(bundle, csv_text, relative.as_posix())
+        tracker_rendered = tracker_view(bundle, destination / "tracker.xlsx", csv_text, relative.as_posix())
         latest = {"schema": "fund-ana-github-latest-v1", "publication": publication,
                   "directory": relative.as_posix(), "files": [item["path"] for item in bundle["files"]]}
         view_path = Path("views") / publication["run_id"] / (publication["revision"] + ".md")
-        rendered = report_view(bundle, (destination / "formal.csv").read_text(encoding="utf-8-sig"), relative.as_posix())
         (repository / view_path).parent.mkdir(parents=True, exist_ok=True)
         (repository / view_path).write_text(rendered, encoding="utf-8")
         latest["reading_view"] = view_path.as_posix()
+        tracker_path = Path("views") / publication["run_id"] / publication["revision"] / "tracker.md"
+        (repository / tracker_path).parent.mkdir(parents=True, exist_ok=True)
+        (repository / tracker_path).write_text(tracker_rendered, encoding="utf-8")
+        latest["tracker_reading_view"] = tracker_path.as_posix()
         latest["timezone"] = "Asia/Shanghai"
         write_json(latest_path, latest)
     check_dir = repository / "checks" / check["check_date"]

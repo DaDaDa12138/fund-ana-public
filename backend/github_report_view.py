@@ -46,7 +46,7 @@ def report_view(bundle: dict, csv_text: str, directory: str) -> str:
              f'- 净值日期：**{cell(publication.get("nav_date"))}**',
              f'- 正式提交：{cell(display_shanghai(publication.get("committed_at")))}',
              f'- 运行：`{publication["run_id"]}` · generation **{publication["generation"]}**', "",
-             f'[正式 Excel]({root}/formal.xlsx) · [CSV]({root}/formal.csv) · [累计跟踪]({root}/tracker.xlsx) · [完整分析报告]({root}/report.md)', "",
+             f'[正式 Excel]({root}/formal.xlsx) · [CSV]({root}/formal.csv) · [主榜累计跟踪 Markdown]({publication["revision"]}/tracker.md) · [累计跟踪 Excel]({root}/tracker.xlsx) · [完整分析报告]({root}/report.md)', "",
              "收益、回撤单位为百分比；评分保留原文件精度。— 表示缺失，真实零值仍显示为 0。表内保持原正式文件相对顺序，无新增排名或投资承诺。", ""]
     columns = ["基金代码", "基金名称", "正式投资评分", "近1年(%)", "1年-最大回撤(%)", "持有期状态"]
     headers = ["代码", "基金名称", "评分", "近1年 %", "1年回撤 %", "持有期说明"]
@@ -69,7 +69,7 @@ def report_view(bundle: dict, csv_text: str, directory: str) -> str:
     lines += ["## 报告下载", "",
               "| 内容 | 文件 |", "|---|---|",
               f"| 正式名单与当期指标 | [Excel]({root}/formal.xlsx) · [CSV]({root}/formal.csv) |",
-              f"| 累计跟踪 | [Excel]({root}/tracker.xlsx) |",
+              f'| 主榜累计跟踪 | [Markdown]({publication["revision"]}/tracker.md) · [完整 Excel]({root}/tracker.xlsx) |',
               f"| 完整分析与筛选说明 | [report.md]({root}/report.md) |", "",
               "### 前瞻验证", "",
               "尚未成熟的观察窗口不代表已实现收益；收益和风险口径以原报告所载契约为准。", ""]
@@ -117,6 +117,8 @@ def report_index(latest: dict | None, check: dict) -> str:
                   f'- 运行：`{pub["run_id"]}` · generation **{pub["generation"]}**', ""]
         if view:
             lines += [f'### [打开本期阅读版报告]({view})', ""]
+        if latest.get("tracker_reading_view"):
+            lines += [f'### [打开主榜累计跟踪 Markdown]({latest["tracker_reading_view"]})', ""]
         labels = {"formal.xlsx": "正式名单 Excel", "formal.csv": "正式名单 CSV",
                   "tracker.xlsx": "累计跟踪", "report.md": "完整分析报告"}
         lines += ["| 报告内容 | 打开或下载 |", "|---|---|"]
@@ -129,6 +131,6 @@ def report_index(latest: dict | None, check: dict) -> str:
             lines += ["", "</details>"]
         lines += ["", "## 历史与证据", "",
                   "[历史报告](reports/) · [执行收据](checks/)", "",
-                  "无新净值时保留原报告日期；同步或核验旧报告不表示完成新采集。原报告、清单及 SHA 不改写；阅读版由已核验 CSV 生成。", "",
+                  "无新净值时保留原报告日期；同步或核验旧报告不表示完成新采集。原报告、清单及 SHA 不改写；报告阅读版由已核验 CSV 生成，主榜累计跟踪 Markdown 由 tracker.xlsx 当前在榜表生成并与正式 CSV 对账。", "",
                   "数据库、收藏、凭据、原始响应和冻结输入不在此分支。报告文件不是完整运行备份。", ""]
     return "\n".join(lines)
