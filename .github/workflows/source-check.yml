@@ -22,6 +22,13 @@ jobs:
           node-version: '22'
       - name: Check Python source syntax
         run: python -m compileall -q backend core scripts tests
+      - name: Verify cloud state and report commands with only their host dependencies
+        run: |
+          python -m venv "$RUNNER_TEMP/fund-ana-state-python"
+          state_python="$RUNNER_TEMP/fund-ana-state-python/bin/python3"
+          "$state_python" -m pip install --disable-pip-version-check -r requirements-github-host.txt
+          "$state_python" scripts/manage_github_cloud_state.py --help > /dev/null
+          "$state_python" scripts/sync_github_reports.py --help > /dev/null
       - name: Check JavaScript syntax
         run: find frontend deploy tests -type f -name '*.js' -print0 | xargs -0 -n1 node --check
       - name: Run source-only frontend regression tests

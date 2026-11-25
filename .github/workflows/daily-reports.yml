@@ -65,7 +65,10 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y -qq zstd python3-venv
           /usr/bin/python3 -m venv "$RUNNER_TEMP/fund-ana-state-python"
-          "$RUNNER_TEMP/fund-ana-state-python/bin/python3" -m pip install --disable-pip-version-check PyYAML
+          state_python="$RUNNER_TEMP/fund-ana-state-python/bin/python3"
+          "$state_python" -m pip install --disable-pip-version-check -r requirements-github-host.txt
+          "$state_python" scripts/manage_github_cloud_state.py --help > /dev/null
+          "$state_python" scripts/sync_github_reports.py --help > /dev/null
           echo "$RUNNER_TEMP/fund-ana-state-python/bin" >> "$GITHUB_PATH"
           df -h / /mnt
       - name: Restore verified durable cloud state
