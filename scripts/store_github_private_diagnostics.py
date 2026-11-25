@@ -19,7 +19,7 @@ from backend.github_cloud_state import Remote
 from backend.github_storage import source_repository, state_repository
 from backend.shanghai_time import SHANGHAI
 
-ALLOWED = ("restore", "history", "production", "runtime-api", "state", "report-sync", "failure-sync")
+ALLOWED = ("restore", "history", "production", "runtime-api", "state", "report-sync", "failure-sync", "tiantian-proxy")
 
 
 def archive_logs(root: Path, output: Path, secrets: list[str]) -> int:

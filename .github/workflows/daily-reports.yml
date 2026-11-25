@@ -216,6 +216,12 @@ jobs:
         run: |
           echo 'Cloud collection or state persistence was not a clean success. Previous durable state/report remains available; inspect the execution receipt.'
           exit 1
+      - name: Capture upstream proxy diagnostics
+        if: always() && steps.restore.outputs.ready == 'true'
+        run: |
+          if docker container inspect tiantian-api > /dev/null 2>&1; then
+            docker logs --tail 500 tiantian-api > .cloud-private-logs/tiantian-proxy.log 2>&1
+          fi
       - name: Save private diagnostic logs
         if: always() && steps.daily.outputs.run == 'true'
         env:
