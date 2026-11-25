@@ -6,6 +6,7 @@ from typing import Any
 import pandas as pd
 
 from core.utils.buyability import buyability_label, normalize_buyability
+from core.utils.publication_nav_policy import FORMAL_NAV_FRESHNESS_DAYS
 from backend.bond_style_classifier import classify_bond_style
 from backend.manager_metrics import coverage_note, coverage_text
 from backend.fee_semantics import (
@@ -119,7 +120,7 @@ MANAGER_STABILITY_DIAGNOSIS = "经理从业与评分诊断"
 AUTO_PUBLISH_GATE_DIAGNOSIS = "自动发布门禁诊断"
 FINAL_SELECTION_NOT_SELECTED_DIAGNOSIS = "最终精选未入围"
 
-DYNAMIC_NAV_FRESHNESS_DAYS = 10
+DYNAMIC_NAV_FRESHNESS_DAYS = FORMAL_NAV_FRESHNESS_DAYS
 
 PUBLISH_CONFIDENCE_CONFIG = {
     "weighted_high_margin": 6.0,

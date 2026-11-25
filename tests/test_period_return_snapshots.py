@@ -391,6 +391,29 @@ def test_bounded_batches_rotate_and_reused_collector_does_not_reuse_observations
     assert collector.response_observations == []
 
 
+@pytest.mark.parametrize("age,eligible", [(10, True), (11, False)])
+def test_scheduled_refresh_matches_formal_nav_freshness_before_cooldown(tmp_path, clock, age, eligible):
+    clock.value = T0 + timedelta(days=15)
+    collector, db, _, calls = make_collector(tmp_path)
+    with db.get_session() as session:
+        row = session.get(FundReturns, CODE)
+        row.latest_nav_date = clock.value.date() - timedelta(days=age)
+        row.period_return_attempted_at = clock.value - timedelta(hours=1)
+        row.period_return_last_status = "date_mismatch"
+
+    result = collector.collect_current()
+    assert result["max_nav_age_days"] == 10
+    assert result["no_current_nav_count"] == int(not eligible)
+    assert result["cooldown_count"] == result["blocking_count"] == int(eligible)
+    assert result["screening_blocked"] is eligible
+    assert calls == []
+
+    explicit = collector.collect_current(fcodes=[CODE])
+    assert explicit["max_nav_age_days"] == 14
+    assert explicit["cooldown_count"] == explicit["blocking_count"] == 1
+    assert read_row(db)["period_return_last_status"] == "date_mismatch"
+
+
 def test_cli_artifact_and_runtime_semantics_agree_for_success_and_cooldown(tmp_path, clock, monkeypatch, capsys):
     from backend.collection_log_summary import classify_collection_log_severity
     from scripts.audit_data_truthfulness import _stdout_result_semantics

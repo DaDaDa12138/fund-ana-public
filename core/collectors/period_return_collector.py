@@ -11,6 +11,7 @@ from collectors.fund_collector import FundCollector
 from database.models import Fund, FundReturns
 from utils.fund_type_filters import build_bond_filter
 from utils.holding_period_policy import HOLDING_PERIOD_LIMIT, combine_holding_period_names, holding_period_gate_reason
+from utils.publication_nav_policy import FORMAL_NAV_FRESHNESS_DAYS
 from utils.period_return_snapshot import (
     RETURN_FIELDS, RETURN_PROVENANCE_FIELDS, has_dated_period_snapshot,
     select_return_update, snapshot_date, local_observation_time, period_collection_blocking_count,
@@ -91,6 +92,7 @@ class PeriodReturnCollector(FundCollector):
             if fcodes is not None:
                 query = query.filter(Fund.fcode.in_(fcodes))
             rows = query.all()
+        max_nav_age_days = self._effective_nav_age_days(fcodes)
         counts = {"universe_count": len(rows), "fresh_count": 0, "cooldown_count": 0,
                   "no_current_nav_count": 0, "long_holding_count": 0, "eligible_count": 0,
                   "cooldown_outcomes": []}
@@ -99,7 +101,7 @@ class PeriodReturnCollector(FundCollector):
             record = ({column.name: getattr(returns, column.name) for column in FundReturns.__table__.columns}
                       if returns is not None else {"fcode": fcode})
             nav_date = snapshot_date(record.get("latest_nav_date"))
-            if nav_date is None or not 0 <= (now.date() - nav_date).days <= self.max_nav_age_days:
+            if nav_date is None or not 0 <= (now.date() - nav_date).days <= max_nav_age_days:
                 counts["no_current_nav_count"] += 1
                 continue
             holding_reason = holding_period_gate_reason(
@@ -144,6 +146,12 @@ class PeriodReturnCollector(FundCollector):
         counts["eligible_count"] = len(eligible)
         counts["unselected_count"] = max(0, len(eligible) - self.max_targets)
         return eligible[:self.max_targets], counts
+
+    def _effective_nav_age_days(self, fcodes: list[str] | None) -> int:
+        # Bulk collection feeds formal screening. An explicit diagnostic can
+        # still inspect older NAVs within the configured collection limit.
+        return (min(self.max_nav_age_days, FORMAL_NAV_FRESHNESS_DAYS)
+                if fcodes is None else self.max_nav_age_days)
 
     def _record_attempt(self, fcode: str, attempted_at: datetime, status: str,
                         *, rejected_snapshot: dict | None = None, expected_nav_date=None,
@@ -250,11 +258,12 @@ class PeriodReturnCollector(FundCollector):
             "request_count": 0, "saved_fund_count": 0, "failed_count": 0,
             "changed_fcodes": [], "outcomes": [], "max_targets_per_run": self.max_targets,
             "failure_retry_hours": self.failure_hours, "refresh_stale_hours": self.refresh_hours,
-            "max_nav_age_days": self.max_nav_age_days,
+            "max_nav_age_days": self._effective_nav_age_days(fcodes),
             "request_count_semantics": "logical_client_calls; transport_retries_not_counted",
             "http_attempt_count": None,
             "forced_refresh": bool(force_refresh),
-            "scope": "current_bond_NAVs; scheduled_supplement_excludes_holding_days_over_90",
+            "scope": ("formal_NAV_freshness; scheduled_supplement_excludes_holding_days_over_90"
+                      if fcodes is None else "explicit_fcodes_within_configured_NAV_age"),
         }
         self.last_run_summary = summary
         print(f"区间收益补采: 目标={len(targets)} 新鲜={counts['fresh_count']} "
