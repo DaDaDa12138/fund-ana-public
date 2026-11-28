@@ -7520,6 +7520,27 @@ def test_backfill_returns_from_nav_history_fills_missing_latest_nav_date(tmp_pat
     assert row == ("2026-04-09", 1.5)
 
 
+def test_backfill_returns_from_nav_history_preserves_newer_nav_and_returns(tmp_path: Path) -> None:
+    db_path = _create_nav_maintenance_db(tmp_path / "nav_maintenance_lagging.db")
+    with sqlite3.connect(db_path) as conn:
+        conn.execute("ALTER TABLE fund_returns ADD COLUMN period_return_date TEXT")
+        conn.execute(
+            """UPDATE fund_returns
+               SET latest_nav_date = ?, latest_nav = ?, period_return_date = ?
+               WHERE fcode = ?""",
+            ("2026-04-10", 1.41, "2026-04-10", "000005"),
+        )
+    ctx = SimpleNamespace(settings=SimpleNamespace(database_path=db_path))
+
+    _backfill_returns_from_nav_history(ctx, "000005")
+
+    with sqlite3.connect(db_path) as conn:
+        row = conn.execute(
+            "SELECT latest_nav_date, latest_nav, period_return_date FROM fund_returns WHERE fcode = '000005'"
+        ).fetchone()
+    assert row == ("2026-04-10", 1.41, "2026-04-10")
+
+
 def test_backfill_returns_from_nav_history_inserts_missing_returns_row(tmp_path: Path) -> None:
     db_path = _create_nav_maintenance_db(tmp_path / "nav_maintenance_backfill_insert.db")
     conn = sqlite3.connect(db_path)

@@ -1296,7 +1296,10 @@ def _backfill_returns_from_nav_history(ctx: NavHistoryMaintenanceContext, fcode:
         ).fetchone()
         if latest_row is None:
             return
-        cursor = conn.execute(
+        observed_at = datetime.now().isoformat(timespec="seconds")
+        # A lagging history endpoint can fill gaps, but cannot roll back an
+        # already collected newer NAV and detach its dated period returns.
+        conn.execute(
             """
             UPDATE fund_returns
             SET latest_nav_date = ?,
@@ -1304,34 +1307,28 @@ def _backfill_returns_from_nav_history(ctx: NavHistoryMaintenanceContext, fcode:
                 daily_growth = ?,
                 last_updated_at = ?
             WHERE fcode = ?
+              AND (latest_nav_date IS NULL OR TRIM(latest_nav_date) = ''
+                   OR latest_nav_date <= ?)
             """,
             (
                 latest_row[0],
                 latest_row[1],
                 latest_row[2],
-                datetime.now().isoformat(timespec="seconds"),
+                observed_at,
                 normalized_code,
+                latest_row[0],
             ),
         )
-        if int(getattr(cursor, "rowcount", 0) or 0) <= 0:
-            conn.execute(
-                """
-                INSERT INTO fund_returns (
-                    fcode,
-                    latest_nav_date,
-                    latest_nav,
-                    daily_growth,
-                    last_updated_at
-                ) VALUES (?, ?, ?, ?, ?)
-                """,
-                (
-                    normalized_code,
-                    latest_row[0],
-                    latest_row[1],
-                    latest_row[2],
-                    datetime.now().isoformat(timespec="seconds"),
-                ),
+        conn.execute(
+            """
+            INSERT INTO fund_returns (
+                fcode, latest_nav_date, latest_nav, daily_growth, last_updated_at
             )
+            SELECT ?, ?, ?, ?, ?
+            WHERE NOT EXISTS (SELECT 1 FROM fund_returns WHERE fcode = ?)
+            """,
+            (normalized_code, *latest_row, observed_at, normalized_code),
+        )
         conn.commit()
     finally:
         conn.close()
